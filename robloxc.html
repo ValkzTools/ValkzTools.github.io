@@ -1,4 +1,67 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RobloxC Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet" />
+<style>
+  body {
+    margin: 0;
+    font-family: 'Orbitron', sans-serif;
+    background: radial-gradient(circle at center, #5f3dc4, #2b2d91);
+    color: white;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+  body.visible {
+    opacity: 1;
+  }
+  #menuIcon {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    cursor: pointer;
+    z-index: 101;
+  }
+  .bar {
+    width: 30px;
+    height: 4px;
+    background: white;
+    margin: 6px 0;
+    border-radius: 2px;
+  }
+  #sidebar {
+    height: 100%;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: -250px;
+    background: rgba(0, 0, 0, 0.85);
+    padding-top: 60px;
+    transition: left 0.3s ease;
+    z-index: 100;
+  }
+  #sidebar a {
+    display: block;
+    padding: 15px 25px;
+    color: white;
+    font-size: 1.2em;
+    text-decoration: none;
+    transition: background 0.3s;
+  }
+  #sidebar a:hover {
+    background: #6d28d9;
+  }
+  #sidebar.show {
+    left: 0;
+  }
+  h1 {
+    text-align: center;
+    margin-top: 60px;
+    font-size: 2rem;
+  }
+</style>
 </head>
 <body>
   <div id="menuIcon" aria-label="Toggle Menu" tabindex="0" role="button">
@@ -15,14 +78,32 @@
     <a href="voice.html">Voice Recording Tool</a>
   </nav>
 
-<title>Discord Server</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
-<style>
-  body{margin:0;font-family:'Orbitron',sans-serif;background:radial-gradient(circle at center,#5f3dc4,#2b2d91);color:white;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;}
-  h1{font-size:2rem;margin-bottom:10px;}
-  a{color:#a5b4fc;text-decoration:underline;font-size:1.2rem;}
-</style></head><body>
-  <script>const e=+localStorage.getItem('authenticated'); if(Date.now()>e) location='index.html';</script>
   <h1>RobloxC Detector</h1>
   <a href="https://drive.google.com/file/d/1E-w3dcgiCNhKcphVaYsAMOhSlphHFCbz/view?usp=drive_link" target="_blank">Download</a>
 </body></html>
+
+  <script>
+    // Session check
+    const expires = parseInt(localStorage.getItem("authenticated") || "0", 10);
+    if (Date.now() > expires) window.location.href = "index.html";
+
+    // Fade in
+    window.onload = () => {
+      document.body.classList.add("visible");
+    };
+
+    // Sidebar toggle
+    const menuIcon = document.getElementById("menuIcon");
+    const sidebar = document.getElementById("sidebar");
+    menuIcon.addEventListener("click", () => {
+      sidebar.classList.toggle("show");
+    });
+    menuIcon.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        sidebar.classList.toggle("show");
+      }
+    });
+  </script>
+</body>
+</html>
