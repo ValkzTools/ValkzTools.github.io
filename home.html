@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Valkz Tools - Home</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet" />
+<style>
+  body {
+    margin: 0;
+    font-family: 'Orbitron', sans-serif;
+    background: radial-gradient(circle at top left, #6d28d9, #3b82f6);
+    color: white;
+    overflow-x: hidden;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+  body.visible {
+    opacity: 1;
+  }
+
+  .title {
+    text-align: center;
+    font-size: 3em;
+    margin-top: 60px;
+    animation: flicker 2s infinite;
+  }
+  @keyframes flicker {
+    0%, 100% {
+      color: white;
+    }
+    50% {
+      color: black;
+    }
+  }
+
+  /* Hamburger menu icon */
+  #menuIcon {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    cursor: pointer;
+    z-index: 101;
+  }
+  .bar {
+    width: 30px;
+    height: 4px;
+    background: white;
+    margin: 6px 0;
+    border-radius: 2px;
+  }
+
+  /* Sidebar */
+  #sidebar {
+    height: 100%;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: -250px;
+    background: rgba(0, 0, 0, 0.85);
+    padding-top: 60px;
+    transition: left 0.3s ease;
+    z-index: 100;
+  }
+  #sidebar a {
+    display: block;
+    padding: 15px 25px;
+    color: white;
+    font-size: 1.2em;
+    text-decoration: none;
+    transition: background 0.3s;
+  }
+  #sidebar a:hover {
+    background: #6d28d9;
+  }
+  #sidebar.show {
+    left: 0;
+  }
+</style>
+</head>
+<body>
+  <div id="menuIcon" aria-label="Toggle Menu" tabindex="0" role="button">
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+  </div>
+
+  <nav id="sidebar" aria-label="Sidebar Navigation">
+    <a href="home.html">Home</a>
+    <a href="webcam.html">WebCam Tool</a>
+    <a href="robloxc.html">RobloxC Detector</a>
+    <a href="discord.html">Discord Server</a>
+    <a href="voice.html">Voice Recording Tool</a>
+  </nav>
+
+  <div class="title">Valkz Tools</div>
+
+  <script>
+    // Check authentication session
+    const expires = parseInt(localStorage.getItem("authenticated") || "0", 10);
+    if (Date.now() > expires) {
+      window.location.href = "index.html";
+    }
+
+    // Show page with fade-in effect
+    window.onload = () => {
+      document.body.classList.add("visible");
+    };
+
+    // Sidebar toggle
+    const menuIcon = document.getElementById("menuIcon");
+    const sidebar = document.getElementById("sidebar");
+
+    menuIcon.addEventListener("click", () => {
+      sidebar.classList.toggle("show");
+    });
+    // Accessibility: toggle via keyboard
+    menuIcon.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        sidebar.classList.toggle("show");
+      }
+    });
+  </script>
+</body>
+</html>
