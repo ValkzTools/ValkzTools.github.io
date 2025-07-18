@@ -5,17 +5,18 @@
   <title>Valkz Tools</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
   <style>
-    body{margin:0;font-family:'Orbitron',sans-serif;background:radial-gradient(circle at top left,#6d28d9,#3b82f6);color:white;overflow:hidden;}
-    .title{text-align:center;font-size:3em;margin-top:60px;animation:flicker 2s infinite;}
-    @keyframes flicker{0%,100%{color:white;}50%{color:black;}}
-    .password-container{text-align:center;margin-top:40px;}
-    .password-input{padding:10px;border:2px solid transparent;border-radius:15px;font-size:1.2em;animation:rainbow 2s linear infinite;background:rgba(255,255,255,0.1);color:white;}
-    @keyframes rainbow{0%{border-color:red;}25%{border-color:orange;}50%{border-color:yellow;}75%{border-color:green;}100%{border-color:red;}}
-    .hidden{display:none;} .sidebar-toggle{position:absolute;top:20px;left:20px;cursor:pointer;display:none;}
-    .bar{width:30px;height:4px;background:white;margin:6px 0;}
-    .sidebar{height:100%;width:250px;position:fixed;top:0;left:-250px;background:rgba(0,0,0,0.85);padding-top:60px;transition:0.3s;}
-    .sidebar a{padding:15px 25px;display:block;color:white;text-decoration:none;font-size:1.2em;transition:0.3s;}
-    .sidebar a:hover{background:#6d28d9;}
+    body { margin:0; font-family:'Orbitron',sans-serif; background: radial-gradient(circle at top left,#6d28d9,#3b82f6); color:white; }
+    .title { text-align:center; font-size:3em; margin-top:60px; animation:flicker 2s infinite; }
+    @keyframes flicker { 0%,100%{color:white;} 50%{color:black;} }
+    .password-container { text-align:center; margin-top:40px; }
+    .password-input { padding:10px;border:2px solid transparent;border-radius:15px;font-size:1.2em;animation:rainbow 2s linear infinite;background:rgba(255,255,255,0.1);color:white; }
+    @keyframes rainbow {0%{border-color:red;}25%{border-color:orange;}50%{border-color:yellow;}75%{border-color:green;}100%{border-color:red;}}
+    .hidden { display:none; }
+    .sidebar-toggle { position:absolute; top:20px; left:20px; cursor:pointer; display:none; }
+    .bar { width:30px; height:4px; background:white; margin:6px 0; }
+    .sidebar { height:100%; width:250px; position:fixed; top:0; left:-250px; background:rgba(0,0,0,0.85); padding-top:60px; transition:0.3s; }
+    .sidebar a { padding:15px 25px; display:block; color:white; text-decoration:none; font-size:1.2em; transition:0.3s; }
+    .sidebar a:hover { background:#6d28d9; }
   </style>
 </head>
 <body>
@@ -40,15 +41,29 @@
     const correct = "YGisthebest1.";
     const pwd = document.getElementById('password'), main = document.getElementById('main-content'), menu = document.getElementById('menuIcon');
     pwd.addEventListener('keypress', e => {
-      if(e.key==='Enter'&&pwd.value===correct){
-        main.style.transition='opacity 1s'; main.style.opacity=0;
-        setTimeout(()=>{main.classList.add('hidden'); menu.style.display='block';},1000);
+      if (e.key === 'Enter' && pwd.value === correct) {
+        const expires = Date.now() + 10 * 60 * 60 * 1000;
+        localStorage.setItem('authenticated', expires);
+        main.style.transition = 'opacity 1s'; main.style.opacity = 0;
+        setTimeout(()=> { main.classList.add('hidden'); menu.style.display = 'block'; }, 1000);
+      } else if (e.key === 'Enter') {
+        alert('Incorrect password');
       }
     });
-    menu.addEventListener('click',()=> {
+
+    menu.addEventListener('click', () => {
        const sb = document.getElementById('sidebar');
        sb.style.left = sb.style.left === '0px' ? '-250px' : '0px';
     });
+
+    // Auto-show sidebar if already authenticated
+    window.onload = () => {
+      const exp = parseInt(localStorage.getItem('authenticated') || 0);
+      if (Date.now() < exp) {
+        main.classList.add('hidden');
+        menu.style.display = 'block';
+      }
+    };
   </script>
 </body>
 </html>
