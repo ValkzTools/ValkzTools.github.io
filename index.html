@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Valkz Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: radial-gradient(circle at top left, #6d28d9, #3b82f6);
+      overflow: hidden;
+      color: white;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 3em;
+      margin-top: 100px;
+      animation: flicker 2s infinite;
+      color: white;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    @keyframes flicker {
+      0%, 100% { color: white; }
+      50% { color: black; }
+    }
+
+    .password-container {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .password-input {
+      padding: 10px;
+      border: 2px solid transparent;
+      border-radius: 15px;
+      outline: none;
+      font-size: 1.2em;
+      animation: rainbow 2s linear infinite;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    @keyframes rainbow {
+      0% { border-color: red; }
+      25% { border-color: orange; }
+      50% { border-color: yellow; }
+      75% { border-color: green; }
+      100% { border-color: red; }
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .sidebar-toggle {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      cursor: pointer;
+      display: none;
+    }
+
+    .bar {
+      width: 30px;
+      height: 4px;
+      background-color: white;
+      margin: 6px 0;
+      transition: 0.4s;
+    }
+
+    .sidebar {
+      height: 100%;
+      width: 250px;
+      position: fixed;
+      top: 0;
+      left: -250px;
+      background-color: rgba(0, 0, 0, 0.85);
+      padding-top: 60px;
+      transition: 0.3s;
+      color: white;
+    }
+
+    .sidebar a {
+      padding: 15px 25px;
+      text-decoration: none;
+      font-size: 1.2em;
+      display: block;
+      color: white;
+      transition: 0.3s;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .sidebar a:hover {
+      background-color: #6d28d9;
+    }
+
+    .content-section {
+      display: none;
+      text-align: center;
+      margin-top: 100px;
+      font-size: 2em;
+      font-family: 'Orbitron', sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div id="main-content">
+    <div class="title" id="title">Valkz Tools</div>
+    <div class="password-container">
+      <input type="password" id="password" class="password-input" placeholder="Enter Password" />
+    </div>
+  </div>
+
+  <div class="sidebar-toggle" id="menuIcon">
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+  </div>
+
+  <div class="sidebar" id="sidebar">
+    <a href="#" onclick="showSection('home')">Home</a>
+    <a href="#" onclick="showSection('webcam')">WebCam Tool</a>
+    <a href="#" onclick="showSection('robloxc')">RobloxC Detector</a>
+    <a href="#" onclick="showSection('discord')">Discord Server</a>
+    <a href="#" onclick="showSection('voice')">Voice Recording Tool</a>
+  </div>
+
+  <div id="home" class="content-section">Welcome to Valkz Tools</div>
+  <div id="webcam" class="content-section">WebCam Tool</div>
+  <div id="robloxc" class="content-section">RobloxC Detector</div>
+  <div id="discord" class="content-section">Discord Server</div>
+  <div id="voice" class="content-section">Voice Recording Tool</div>
+
+  <script>
+    const correctPassword = "YGisthebest1.";
+    const passwordInput = document.getElementById("password");
+    const mainContent = document.getElementById("main-content");
+    const menuIcon = document.getElementById("menuIcon");
+
+    passwordInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        if (passwordInput.value === correctPassword) {
+          fadeOutMain();
+        } else {
+          alert("Incorrect Password!");
+        }
+      }
+    });
+
+    function fadeOutMain() {
+      mainContent.style.transition = "opacity 1s ease";
+      mainContent.style.opacity = 0;
+      setTimeout(() => {
+        mainContent.classList.add("hidden");
+        menuIcon.style.display = "block";
+        document.getElementById("home").style.display = "block";
+      }, 1000);
+    }
+
+    menuIcon.addEventListener("click", function () {
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar.style.left === "0px") {
+        sidebar.style.left = "-250px";
+      } else {
+        sidebar.style.left = "0px";
+      }
+    });
+
+    function showSection(id) {
+      const sections = document.querySelectorAll(".content-section");
+      sections.forEach(sec => sec.style.display = "none");
+      document.getElementById(id).style.display = "block";
+    }
+  </script>
+</body>
+</html>
