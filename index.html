@@ -1,112 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Valkz Tools Login</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet" />
-<style>
-  body {
-    margin: 0;
-    font-family: 'Orbitron', sans-serif;
-    background: radial-gradient(circle at top left, #6d28d9, #3b82f6);
-    color: white;
-    overflow: hidden;
-  }
-  .title {
-    text-align: center;
-    font-size: 3em;
-    margin-top: 60px;
-    animation: flicker 2s infinite;
-  }
-  @keyframes flicker {
-    0%, 100% {
+  <meta charset="UTF-8" />
+  <title>Valkz Tools - Login</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(135deg, #4e54c8, #8f94fb);
+      font-family: 'Orbitron', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
       color: white;
+      transition: opacity 0.5s ease;
     }
-    50% {
-      color: black;
+
+    h1 {
+      font-size: 2.5em;
+      animation: flicker 1s infinite alternate;
     }
-  }
-  .password-container {
-    text-align: center;
-    margin-top: 40px;
-  }
-  .password-input {
-    padding: 10px;
-    border: 2px solid transparent;
-    border-radius: 15px;
-    font-size: 1.2em;
-    animation: rainbow 2s linear infinite;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-  }
-  @keyframes rainbow {
-    0% {
-      border-color: red;
+
+    @keyframes flicker {
+      from { color: white; }
+      to { color: black; }
     }
-    25% {
-      border-color: orange;
+
+    input {
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: 2px solid;
+      border-image: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet) 1;
+      outline: none;
     }
-    50% {
-      border-color: yellow;
+
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      background-color: black;
+      color: white;
+      cursor: pointer;
     }
-    75% {
-      border-color: green;
-    }
-    100% {
-      border-color: red;
-    }
-  }
-  #login-container {
-    opacity: 1;
-    transition: opacity 1s ease;
-  }
-</style>
+  </style>
 </head>
 <body>
-  <div id="login-container">
-    <div class="title">Valkz Tools</div>
-    <div class="password-container">
-      <input
-        type="password"
-        id="password"
-        placeholder="Enter Password"
-        class="password-input"
-        autofocus
-      />
-    </div>
-  </div>
+  <h1>Valkz Tools</h1>
+  <input type="password" id="password" placeholder="Enter password" />
+  <button onclick="handleLogin()">Login</button>
 
   <script>
-    const correct = "YGisthebest1.";
-    const pwd = document.getElementById("password");
-    const loginContainer = document.getElementById("login-container");
-
-    pwd.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        if (pwd.value === correct) {
-          // Save session expiry (10 hours)
-          const expires = Date.now() + 10 * 60 * 60 * 1000;
-          localStorage.setItem("authenticated", expires);
-
-          // Fade out login content
-          loginContainer.style.opacity = "0";
-
-          // After fade, redirect to home.html
-          setTimeout(() => {
-            window.location.href = "home.html";
-          }, 1000);
-        } else {
-          alert("Incorrect password");
-          pwd.value = "";
-        }
+    function handleLogin() {
+      const password = document.getElementById("password").value;
+      if (password === "YGisthebest1.") {
+        window.location.href = "home.html";
+      } else {
+        alert("Incorrect password.");
       }
-    });
-
-    // Optional: auto-focus input on load
-    window.onload = () => {
-      pwd.focus();
-    };
+    }
   </script>
 </body>
 </html>
