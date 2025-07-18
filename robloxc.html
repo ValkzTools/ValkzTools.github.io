@@ -1,45 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <title>RobloxC Detector</title>
-  <style>
-    body {
-      background: linear-gradient(135deg, #4e54c8, #8f94fb);
-      color: white;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      text-align: center;
-    }
-    a {
-      color: white;
-      font-size: 1.5em;
-      text-decoration: underline;
-    }
-  </style>
-</head>
-<body>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RobloxC Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;font-family:'Orbitron',sans-serif;background:radial-gradient(circle at center,#5f3dc4,#2b2d91);color:white;display:flex;align-items:center;justify-content:center;height:100vh;}
+  h1{font-size:2rem;}
+</style></head><body>
+  <script>const exp=+localStorage.getItem('authenticated'); if(Date.now()>exp) location='index.html';</script>
   <h1>RobloxC Detector</h1>
-  <a href="https://drive.google.com/file/d/1E-w3dcgiCNhKcphVaYsAMOhSlphHFCbz/view?usp=drive_link" target="_blank">Download</a>
-
-<div style="position: fixed; top: 15px; left: 15px;">
-  <div onclick="toggleSidebar()" style="cursor:pointer; font-size: 30px;">☰</div>
-</div>
-
-<div id="sidebar" style="display:none; position:fixed; top:0; left:0; height:100%; width:200px; background:#111; color:white; padding:20px;">
-  <a href="home.html" style="color:white; display:block; margin:10px 0;">Home</a>
-  <a href="webcam.html" style="color:white; display:block; margin:10px 0;">WebCam Tool</a>
-  <a href="robloxc.html" style="color:white; display:block; margin:10px 0;">RobloxC Detector</a>
-  <a href="discord.html" style="color:white; display:block; margin:10px 0;">Discord Server</a>
-  <a href="voice.html" style="color:white; display:block; margin:10px 0;">Voice Recording Tool</a>
-</div>
-
-<script>
-  function toggleSidebar() {
-    const sb = document.getElementById("sidebar");
-    sb.style.display = sb.style.display === "block" ? "none" : "block";
-  }
-</script>
-
-</body>
-</html>
+</body></html>
