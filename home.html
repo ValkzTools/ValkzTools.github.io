@@ -96,12 +96,7 @@
   <div class="title">Valkz Tools</div>
 
   <script>
-    // Check authentication session
-    const expires = parseInt(localStorage.getItem("authenticated") || "0", 10);
-    if (Date.now() > expires) {
-      window.location.href = "index.html";
-    }
-
+  
     // Show page with fade-in effect
     window.onload = () => {
       document.body.classList.add("visible");
