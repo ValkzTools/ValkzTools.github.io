@@ -1,194 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Valkz Tools</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      font-family: 'Orbitron', sans-serif;
-      background: radial-gradient(circle at top left, #6d28d9, #3b82f6);
-      color: white;
-      overflow: hidden;
-    }
-    .title { text-align: center; font-size: 3em; margin-top: 60px; animation: flicker 2s infinite; }
-    @keyframes flicker { 0%,100% {color: white;} 50% {color: black;} }
-
-    .password-container { text-align: center; margin-top: 40px; }
-    .password-input {
-      padding: 10px; border: 2px solid transparent; border-radius: 15px;
-      font-size: 1.2em; animation: rainbow 2s linear infinite;
-      background-color: rgba(255,255,255,0.1); color: white;
-    }
-    @keyframes rainbow {
-      0% {border-color: red;}25% {border-color: orange;}
-      50% {border-color: yellow;}75% {border-color: green;}100% {border-color: red;}
-    }
-
-    .hidden { display: none; }
-    .sidebar-toggle { position: absolute; top:20px; left:20px; cursor:pointer; display:none; }
-    .bar { width:30px; height:4px; background:white; margin:6px 0; }
-
-    .sidebar {
-      height:100%; width:250px; position:fixed; top:0; left:-250px;
-      background:rgba(0,0,0,0.85); padding-top:60px; transition:0.3s;
-    }
-    .sidebar a {
-      padding:15px 25px; display:block; color:white; text-decoration:none;
-      font-size:1.2em; transition:0.3s;
-    }
-    .sidebar a:hover { background:#6d28d9; }
-
-    .content-section {
-      display:none; text-align:center; padding-top:60px;
-    }
-
-    video { width:640px; height:480px; background:black; border-radius:15px; margin-top:20px; }
-
-    .controls { margin-top:15px; display:flex; flex-wrap: wrap; justify-content:center; gap:10px; }
-    select, button {
-      padding:10px 15px; font-size:1rem; border:none; border-radius:8px;
-      background:#3a34a0; color:white; cursor:pointer;
-    }
-    select { background:#2c2670; }
-    button:hover { background:#4e45cc; }
+    body{margin:0;font-family:'Orbitron',sans-serif;background:radial-gradient(circle at top left,#6d28d9,#3b82f6);color:white;overflow:hidden;}
+    .title{text-align:center;font-size:3em;margin-top:60px;animation:flicker 2s infinite;}
+    @keyframes flicker{0%,100%{color:white;}50%{color:black;}}
+    .password-container{text-align:center;margin-top:40px;}
+    .password-input{padding:10px;border:2px solid transparent;border-radius:15px;font-size:1.2em;animation:rainbow 2s linear infinite;background:rgba(255,255,255,0.1);color:white;}
+    @keyframes rainbow{0%{border-color:red;}25%{border-color:orange;}50%{border-color:yellow;}75%{border-color:green;}100%{border-color:red;}}
+    .hidden{display:none;} .sidebar-toggle{position:absolute;top:20px;left:20px;cursor:pointer;display:none;}
+    .bar{width:30px;height:4px;background:white;margin:6px 0;}
+    .sidebar{height:100%;width:250px;position:fixed;top:0;left:-250px;background:rgba(0,0,0,0.85);padding-top:60px;transition:0.3s;}
+    .sidebar a{padding:15px 25px;display:block;color:white;text-decoration:none;font-size:1.2em;transition:0.3s;}
+    .sidebar a:hover{background:#6d28d9;}
   </style>
 </head>
 <body>
-
   <div id="main-content">
     <div class="title">Valkz Tools</div>
     <div class="password-container">
-      <input type="password" id="password" class="password-input" placeholder="Enter Password" />
+      <input type="password" id="password" placeholder="Enter Password" class="password-input"/>
     </div>
   </div>
-
   <div class="sidebar-toggle" id="menuIcon">
     <div class="bar"></div><div class="bar"></div><div class="bar"></div>
   </div>
-
   <div class="sidebar" id="sidebar">
-    <a href="#" onclick="showSection('home')">Home</a>
-    <a href="#" onclick="showSection('webcam')">WebCam Tool</a>
-    <a href="#" onclick="showSection('robloxc')">RobloxC Detector</a>
-    <a href="#" onclick="showSection('discord')">Discord Server</a>
-    <a href="#" onclick="showSection('voice')">Voice Recording Tool</a>
-  </div>
-
-  <div id="home" class="content-section">
-    <h1>Welcome to Valkz Tools</h1>
-  </div>
-
-  <div id="webcam" class="content-section">
-    <h1>WebCam & Mic Recorder</h1>
-    <video id="preview" autoplay muted></video>
-    <div class="controls">
-      <select id="videoSource"></select>
-      <select id="audioSource"></select>
-      <button id="startBtn">Start Recording</button>
-      <button id="stopBtn" disabled>Stop & Download</button>
-    </div>
-  </div>
-
-  <div id="robloxc" class="content-section">
-    <h1>RobloxC Detector</h1>
-  </div>
-
-  <div id="discord" class="content-section">
-    <h1>Join Our Discord</h1>
-    <a href="https://discord.gg/S7XPWvg8fy" target="_blank" style="color:#a5b4fc; text-decoration:underline;">
-      https://discord.gg/S7XPWvg8fy
-    </a>
-  </div>
-
-  <div id="voice" class="content-section">
-    <h1>Voice Recording Tool</h1>
+    <a href="index.html">Home</a>
+    <a href="webcam.html">WebCam Tool</a>
+    <a href="robloxc.html">RobloxC Detector</a>
+    <a href="discord.html">Discord Server</a>
+    <a href="voice.html">Voice Recording Tool</a>
   </div>
 
   <script>
-    const correctPassword = "YGisthebest1.";
-    const pwd = document.getElementById('password');
-    const main = document.getElementById('main-content');
-    const menu = document.getElementById('menuIcon');
-
+    const correct = "YGisthebest1.";
+    const pwd = document.getElementById('password'), main = document.getElementById('main-content'), menu = document.getElementById('menuIcon');
     pwd.addEventListener('keypress', e => {
-      if (e.key === 'Enter' && pwd.value === correctPassword) {
-        main.style.transition = 'opacity 1s'; main.style.opacity = 0;
-        setTimeout(() => { main.classList.add('hidden'); menu.style.display='block'; showSection('home'); }, 1000);
+      if(e.key==='Enter'&&pwd.value===correct){
+        main.style.transition='opacity 1s'; main.style.opacity=0;
+        setTimeout(()=>{main.classList.add('hidden'); menu.style.display='block';},1000);
       }
     });
-
-    menu.addEventListener('click', () => {
-      const sb = document.getElementById('sidebar');
-      sb.style.left = sb.style.left === '0px' ? '-250px' : '0px';
+    menu.addEventListener('click',()=> {
+       const sb = document.getElementById('sidebar');
+       sb.style.left = sb.style.left === '0px' ? '-250px' : '0px';
     });
-
-    function showSection(id) {
-      document.querySelectorAll('.content-section').forEach(el => el.style.display='none');
-      document.getElementById(id).style.display = 'block';
-    }
-
-    // Webcam & mic recorder logic
-    const videoElem = document.getElementById('preview');
-    const vSelect = document.getElementById('videoSource');
-    const aSelect = document.getElementById('audioSource');
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    let mediaRecorder, recorded = [], currentStream;
-
-    async function updateDevices() {
-      const d = await navigator.mediaDevices.enumerateDevices();
-      vSelect.innerHTML = ''; aSelect.innerHTML = '';
-      d.forEach(dev => {
-        let opt = document.createElement('option');
-        opt.value = dev.deviceId;
-        opt.text = dev.label || dev.kind;
-        if (dev.kind === 'videoinput') vSelect.appendChild(opt);
-        if (dev.kind === 'audioinput') aSelect.appendChild(opt);
-      });
-    }
-
-    async function startStream() {
-      if (currentStream) currentStream.getTracks().forEach(t => t.stop());
-      const constraints = {
-        video: { deviceId: vSelect.value ? {exact: vSelect.value} : undefined },
-        audio: { deviceId: aSelect.value ? {exact: aSelect.value} : undefined }
-      };
-      try {
-        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-        videoElem.srcObject = currentStream;
-      } catch (e) {
-        alert('Error accessing camera/mic: ' + e);
-      }
-    }
-
-    vSelect.onchange = startStream;
-    aSelect.onchange = startStream;
-
-    startBtn.onclick = async () => {
-      await startStream();
-      recorded = [];
-      mediaRecorder = new MediaRecorder(currentStream);
-      mediaRecorder.ondataavailable = e => { if (e.data.size) recorded.push(e.data); };
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recorded, { type:'video/mp4' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'recording.mp4'; a.click();
-        URL.revokeObjectURL(url);
-      };
-      mediaRecorder.start();
-      startBtn.disabled = true; stopBtn.disabled = false;
-    };
-
-    stopBtn.onclick = () => {
-      mediaRecorder.stop();
-      startBtn.disabled = false; stopBtn.disabled = true;
-    };
-
-    updateDevices();
   </script>
 </body>
 </html>
