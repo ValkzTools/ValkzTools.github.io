@@ -1,83 +1,86 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
+<!DOCTYPE html><html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>WebCam Tool</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      font-family: 'Orbitron', sans-serif;
-      background: radial-gradient(circle, #5f27cd, #341f97);
-      color: white;
-      transition: opacity 0.5s ease;
-      opacity: 0;
-    }
-    .menu-icon {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      font-size: 28px;
-      cursor: pointer;
-      z-index: 1000;
-    }
-    .sidebar {
-      position: fixed;
-      left: -220px;
-      top: 0;
-      width: 200px;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      padding-top: 60px;
-      transition: 0.3s;
-    }
-    .sidebar a {
-      display: block;
-      padding: 10px 20px;
-      color: white;
-      text-decoration: none;
-    }
-    .sidebar a:hover {
-      background-color: #6c5ce7;
-    }
-    .main {
-      margin-left: 60px;
-      padding: 20px;
-    }
+    body{margin:0;font-family:'Orbitron',sans-serif;background:radial-gradient(circle at center,#5f3dc4,#2b2d91);color:white;display:flex;flex-direction:column;align-items:center;padding:20px;}
+    h1{font-size:2rem;margin:20px;}
+    video{width:640px;height:480px;border-radius:15px;border:3px solid #8884ff;background:black;}
+    .controls{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:15px;}
+    select,button{padding:10px 15px;border:none;border-radius:8px;font-size:1rem;cursor:pointer;color:white;}
+    select{background:#2c2670;} button{background:#3a34a0;}
+    button:hover{background:#4e45cc;}
   </style>
-</head>
-<body>
-  <div class="menu-icon" onclick="toggleSidebar()">☰</div>
-  <div class="sidebar" id="sidebar">
-    <a href="home.html">Home</a>
-    <a href="webcam.html">WebCam Tool</a>
-    <a href="robloxc.html">RobloxC Detector</a>
-    <a href="discord.html">Discord Server</a>
-    <a href="voice.html">Voice Recording Tool</a>
-  </div>
-  <div class="main">
-    <h1>WebCam Tool</h1>
-    <p>This tool will soon support webcam and microphone recording.</p>
+</head><body>
+  <script>
+    const exp = parseInt(localStorage.getItem('authenticated') || 0);
+    if (Date.now() > exp) window.location = 'index.html';
+  </script>
+
+  <h1>WebCam Tool</h1>
+  <video id="preview" autoplay muted></video>
+  <div class="controls">
+    <select id="videoSource"></select>
+    <select id="audioSource"></select>
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop & Download</button>
   </div>
 
   <script>
-    function toggleSidebar() {
-      const sb = document.getElementById("sidebar");
-      sb.style.left = sb.style.left === "0px" ? "-220px" : "0px";
+    const videoElem = document.getElementById('preview'),
+          vs = document.getElementById('videoSource'),
+          asrc = document.getElementById('audioSource'),
+          startBtn = document.getElementById('startBtn'),
+          stopBtn = document.getElementById('stopBtn');
+    let mediaRecorder, recorded = [], currentStream;
+
+    async function updateDevices(){
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      vs.innerHTML = ''; asrc.innerHTML = '';
+      devices.forEach(d => {
+        const o = document.createElement('option');
+        o.value = d.deviceId; o.text = d.label || d.kind;
+        if (d.kind === 'videoinput') vs.appendChild(o);
+        else if (d.kind === 'audioinput') asrc.appendChild(o);
+      });
     }
 
-    // Session check (10 hours)
-    const sessionTime = localStorage.getItem("valkzLogin");
-    const now = Date.now();
-    const tenHours = 10 * 60 * 60 * 1000;
-    if (!sessionTime || now - parseInt(sessionTime) > tenHours) {
-      alert("Session expired. Please log in again.");
-      window.location.href = "index.html";
+    async function startStream(){
+      if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+      const constraints = {
+        video: vs.value ? { deviceId: { exact: vs.value } } : true,
+        audio: asrc.value ? { deviceId: { exact: asrc.value } } : true
+      };
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        videoElem.srcObject = currentStream;
+      } catch (e) {
+        alert('Media error: ' + e);
+      }
     }
 
-    window.onload = () => {
-      document.body.style.opacity = 1;
+    vs.onchange = asrc.onchange = startStream;
+
+    startBtn.onclick = async () => {
+      await startStream();
+      recorded = [];
+      mediaRecorder = new MediaRecorder(currentStream);
+      mediaRecorder.ondataavailable = e => e.data.size && recorded.push(e.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recorded, { type:'video/mp4' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'recording.mp4'; a.click();
+      };
+      mediaRecorder.start();
+      startBtn.disabled = true; stopBtn.disabled = false;
     };
+
+    stopBtn.onclick = () => {
+      mediaRecorder.stop();
+      startBtn.disabled = false; stopBtn.disabled = true;
+    };
+
+    updateDevices();
   </script>
-</body>
-</html>
+</body></html>
