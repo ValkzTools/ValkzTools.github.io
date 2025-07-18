@@ -1,70 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>WebCam Tool</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet" />
-<style>
-  body {
-    margin: 0;
-    font-family: 'Orbitron', sans-serif;
-    background: radial-gradient(circle at center, #5f3dc4, #2b2d91);
-    color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-    opacity: 0;
-    transition: opacity 1s ease;
-  }
-  body.visible {
-    opacity: 1;
-  }
-  h1 {
-    font-size: 2rem;
-    margin: 20px;
-  }
-  video {
-    width: 640px;
-    height: 480px;
-    border-radius: 15px;
-    border: 3px solid #8884ff;
-    background: black;
-  }
-  .controls {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 15px;
-  }
-  select, button {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    color: white;
-  }
-  select {
-    background: #2c2670;
-  }
-  button {
-    background: #3a34a0;
-  }
-  button:hover {
-    background: #4e45cc;
-  }
-  #menuIcon {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    cursor: pointer;
-    z-index: 101;
-  }
-  .bar {
-    width: 30px;
-    height: 4px;
-    background: white;
-    margin:
+  <meta charset="UTF-8">
+  <title>WebCam Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: radial-gradient(circle at center, #5f27cd, #341f97);
+      color: white;
+    }
+
+    #menu-icon {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 30px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -250px;
+      width: 250px;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      padding-top: 60px;
+      transition: 0.3s;
+      z-index: 999;
+    }
+
+    .sidebar a {
+      padding: 12px 20px;
+      display: block;
+      color: white;
+      text-decoration: none;
+    }
+
+    .sidebar a:hover {
+      background-color: #7f27cd;
+    }
+
+    .main {
+      text-align: center;
+      padding-top: 100px;
+    }
+
+    video {
+      width: 60%;
+      margin-top: 20px;
+      border: 2px solid white;
+      border-radius: 12px;
+    }
+
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #7f27cd;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #a05fff;
+    }
+  </style>
+</head>
+<body>
+  <div id="menu-icon" onclick="toggleSidebar()">☰</div>
+  <div class="sidebar" id="sidebar">
+    <a href="home.html">Home</a>
+    <a href="webcam.html">WebCam Tool</a>
+    <a href="robloxc.html">RobloxC Detector</a>
+    <a href="discord.html">Discord Server</a>
+    <a href="voice.html">Voice Recording Tool</a>
+  </div>
+
+  <div class="main">
+    <h1>WebCam Tool</h1>
+    <video id="video" autoplay playsinline></video><br>
+    <button onclick="startWebcam()">Start</button>
+    <button onclick="stopWebcam()">Stop</button>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      sidebar.style.left = (sidebar.style.left === "0px") ? "-250px" : "0px";
+    }
+
+    let stream;
+
+    async function startWebcam() {
+      if (stream) return;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById('video').srcObject = stream;
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    function stopWebcam() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+        document.getElementById('video').srcObject = null;
+      }
+    }
+
+    // Session check (10 hours)
+    const lastLogin = localStorage.getItem("valkzLogin");
+    if (!lastLogin || new Date().getTime() - lastLogin > 36000000) {
+      alert("Session expired. Please login again.");
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>
