@@ -1,77 +1,37 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <title>Voice Recording Tool</title>
-  <style>
-    body {
-      background: linear-gradient(135deg, #4e54c8, #8f94fb);
-      color: white;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      text-align: center;
-    }
-    button {
-      margin: 10px;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Voice Recording Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;font-family:'Orbitron',sans-serif;background:radial-gradient(circle at center,#5f3dc4,#2b2d91);color:white;display:flex;flex-direction:column;align-items:center;padding-top:50px;}
+  h1{font-size:2rem;margin-bottom:20px;}
+  button{padding:10px 20px;border:none;border-radius:8px;background:#3a34a0;color:white;font-size:1rem;cursor:pointer;}
+  button:hover{background:#4e45cc;}
+  audio{margin-top:20px;width:300px;}
+</style></head><body>
+  <script>const exp=+localStorage.getItem('authenticated'); if(Date.now()>exp) location='index.html';</script>
   <h1>Voice Recording Tool</h1>
-  <button onclick="startVoice()">Start Voice Recording</button>
-  <button onclick="stopVoice()">Stop</button>
-
-<div style="position: fixed; top: 15px; left: 15px;">
-  <div onclick="toggleSidebar()" style="cursor:pointer; font-size: 30px;">☰</div>
-</div>
-
-<div id="sidebar" style="display:none; position:fixed; top:0; left:0; height:100%; width:200px; background:#111; color:white; padding:20px;">
-  <a href="home.html" style="color:white; display:block; margin:10px 0;">Home</a>
-  <a href="webcam.html" style="color:white; display:block; margin:10px 0;">WebCam Tool</a>
-  <a href="robloxc.html" style="color:white; display:block; margin:10px 0;">RobloxC Detector</a>
-  <a href="discord.html" style="color:white; display:block; margin:10px 0;">Discord Server</a>
-  <a href="voice.html" style="color:white; display:block; margin:10px 0;">Voice Recording Tool</a>
-</div>
-
-<script>
-  function toggleSidebar() {
-    const sb = document.getElementById("sidebar");
-    sb.style.display = sb.style.display === "block" ? "none" : "block";
-  }
-</script>
+  <button id="startVoice">Start Recording</button>
+  <button id="stopVoice" disabled>Stop & Play</button>
+  <audio id="playback" controls></audio>
   <script>
-    let mediaRecorder;
-    let audioChunks = [];
-
-    async function startVoice() {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-
-      mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) audioChunks.push(e.data);
+    const sv = document.getElementById('startVoice'), tv = document.getElementById('stopVoice'), pb = document.getElementById('playback');
+    let rec, chunks = [], vs;
+    sv.onclick = async () => {
+      vs = await navigator.mediaDevices.getUserMedia({ audio: true });
+      rec = new MediaRecorder(vs);
+      chunks = [];
+      rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+      rec.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        pb.src = URL.createObjectURL(blob);
+        vs.getTracks().forEach(t => t.stop());
       };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunks, { type: "audio/webm" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "voice_recording.webm";
-        a.click();
-      };
-
-      audioChunks = [];
-      mediaRecorder.start();
-    }
-
-    function stopVoice() {
-      if (mediaRecorder) {
-        mediaRecorder.stop();
-      }
-    }
+      rec.start();
+      sv.disabled = true; tv.disabled = false;
+    };
+    tv.onclick = () => {
+      rec.stop();
+      tv.disabled = true; sv.disabled = false;
+    };
   </script>
-</body>
-</html>
+</body></html>
