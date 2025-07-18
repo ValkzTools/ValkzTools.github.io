@@ -1,83 +1,86 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
+<!DOCTYPE html><html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>WebCam Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
   <style>
-    body {
-      background: linear-gradient(135deg, #4e54c8, #8f94fb);
-      color: white;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      text-align: center;
-    }
-    video {
-      width: 80%;
-      max-width: 600px;
-      margin-top: 20px;
-    }
-    button {
-      margin: 10px;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
+    body{margin:0;font-family:'Orbitron',sans-serif;background:radial-gradient(circle at center,#5f3dc4,#2b2d91);color:white;display:flex;flex-direction:column;align-items:center;padding:20px;}
+    h1{font-size:2rem;margin:20px;}
+    video{width:640px;height:480px;border-radius:15px;border:3px solid #8884ff;background:black;}
+    .controls{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:15px;}
+    select,button{padding:10px 15px;border:none;border-radius:8px;font-size:1rem;cursor:pointer;color:white;}
+    select{background:#2c2670;} button{background:#3a34a0;}
+    button:hover{background:#4e45cc;}
   </style>
-</head>
-<body>
-  <h1>WebCam Tool</h1>
-  <button onclick="startRecording()">Start Recording</button>
-  <button onclick="stopRecording()">Stop Recording</button>
-  <br/>
-  <video id="preview" autoplay muted></video>
-
-<div style="position: fixed; top: 15px; left: 15px;">
-  <div onclick="toggleSidebar()" style="cursor:pointer; font-size: 30px;">☰</div>
-</div>
-
-<div id="sidebar" style="display:none; position:fixed; top:0; left:0; height:100%; width:200px; background:#111; color:white; padding:20px;">
-  <a href="home.html" style="color:white; display:block; margin:10px 0;">Home</a>
-  <a href="webcam.html" style="color:white; display:block; margin:10px 0;">WebCam Tool</a>
-  <a href="robloxc.html" style="color:white; display:block; margin:10px 0;">RobloxC Detector</a>
-  <a href="discord.html" style="color:white; display:block; margin:10px 0;">Discord Server</a>
-  <a href="voice.html" style="color:white; display:block; margin:10px 0;">Voice Recording Tool</a>
-</div>
-
-<script>
-  function toggleSidebar() {
-    const sb = document.getElementById("sidebar");
-    sb.style.display = sb.style.display === "block" ? "none" : "block";
-  }
-</script>
+</head><body>
   <script>
-    let mediaRecorder;
-    let recordedChunks = [];
+    const exp = parseInt(localStorage.getItem('authenticated') || 0);
+    if (Date.now() > exp) window.location = 'index.html';
+  </script>
 
-    async function startRecording() {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      document.getElementById("preview").srcObject = stream;
+  <h1>WebCam Tool</h1>
+  <video id="preview" autoplay muted></video>
+  <div class="controls">
+    <select id="videoSource"></select>
+    <select id="audioSource"></select>
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop & Download</button>
+  </div>
 
-      recordedChunks = [];
-      mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) recordedChunks.push(e.data);
-      };
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunks, { type: "video/mp4" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "recording.mp4";
-        a.click();
-      };
-      mediaRecorder.start();
+  <script>
+    const videoElem = document.getElementById('preview'),
+          vs = document.getElementById('videoSource'),
+          asrc = document.getElementById('audioSource'),
+          startBtn = document.getElementById('startBtn'),
+          stopBtn = document.getElementById('stopBtn');
+    let mediaRecorder, recorded = [], currentStream;
+
+    async function updateDevices(){
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      vs.innerHTML = ''; asrc.innerHTML = '';
+      devices.forEach(d => {
+        const o = document.createElement('option');
+        o.value = d.deviceId; o.text = d.label || d.kind;
+        if (d.kind === 'videoinput') vs.appendChild(o);
+        else if (d.kind === 'audioinput') asrc.appendChild(o);
+      });
     }
 
-    function stopRecording() {
-      if (mediaRecorder) {
-        mediaRecorder.stop();
+    async function startStream(){
+      if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+      const constraints = {
+        video: vs.value ? { deviceId: { exact: vs.value } } : true,
+        audio: asrc.value ? { deviceId: { exact: asrc.value } } : true
+      };
+      try {
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        videoElem.srcObject = currentStream;
+      } catch (e) {
+        alert('Media error: ' + e);
       }
     }
+
+    vs.onchange = asrc.onchange = startStream;
+
+    startBtn.onclick = async () => {
+      await startStream();
+      recorded = [];
+      mediaRecorder = new MediaRecorder(currentStream);
+      mediaRecorder.ondataavailable = e => e.data.size && recorded.push(e.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recorded, { type:'video/mp4' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'recording.mp4'; a.click();
+      };
+      mediaRecorder.start();
+      startBtn.disabled = true; stopBtn.disabled = false;
+    };
+
+    stopBtn.onclick = () => {
+      mediaRecorder.stop();
+      startBtn.disabled = false; stopBtn.disabled = true;
+    };
+
+    updateDevices();
   </script>
-</body>
-</html>
+</body></html>
