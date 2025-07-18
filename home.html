@@ -1,126 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Valkz Tools - Home</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet" />
-<style>
-  body {
-    margin: 0;
-    font-family: 'Orbitron', sans-serif;
-    background: radial-gradient(circle at top left, #6d28d9, #3b82f6);
-    color: white;
-    overflow-x: hidden;
-    opacity: 0;
-    transition: opacity 1s ease;
-  }
-  body.visible {
-    opacity: 1;
-  }
-
-  .title {
-    text-align: center;
-    font-size: 3em;
-    margin-top: 60px;
-    animation: flicker 2s infinite;
-  }
-  @keyframes flicker {
-    0%, 100% {
+  <meta charset="UTF-8" />
+  <title>Valkz Tools - Home</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #4e54c8, #8f94fb);
       color: white;
+      font-family: 'Orbitron', sans-serif;
     }
-    50% {
-      color: black;
+    h1 {
+      text-align: center;
+      padding-top: 100px;
+      font-size: 3em;
     }
-  }
-
-  /* Hamburger menu icon */
-  #menuIcon {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    cursor: pointer;
-    z-index: 101;
-  }
-  .bar {
-    width: 30px;
-    height: 4px;
-    background: white;
-    margin: 6px 0;
-    border-radius: 2px;
-  }
-
-  /* Sidebar */
-  #sidebar {
-    height: 100%;
-    width: 250px;
-    position: fixed;
-    top: 0;
-    left: -250px;
-    background: rgba(0, 0, 0, 0.85);
-    padding-top: 60px;
-    transition: left 0.3s ease;
-    z-index: 100;
-  }
-  #sidebar a {
-    display: block;
-    padding: 15px 25px;
-    color: white;
-    font-size: 1.2em;
-    text-decoration: none;
-    transition: background 0.3s;
-  }
-  #sidebar a:hover {
-    background: #6d28d9;
-  }
-  #sidebar.show {
-    left: 0;
-  }
-</style>
+  </style>
 </head>
 <body>
-  <div id="menuIcon" aria-label="Toggle Menu" tabindex="0" role="button">
-    <div class="bar"></div>
-    <div class="bar"></div>
-    <div class="bar"></div>
-  </div>
+  <h1>Valkz Tools</h1>
+<div style="position: fixed; top: 15px; left: 15px;">
+  <div onclick="toggleSidebar()" style="cursor:pointer; font-size: 30px;">☰</div>
+</div>
 
-  <nav id="sidebar" aria-label="Sidebar Navigation">
-    <a href="home.html">Home</a>
-    <a href="webcam.html">WebCam Tool</a>
-    <a href="robloxc.html">RobloxC Detector</a>
-    <a href="discord.html">Discord Server</a>
-    <a href="voice.html">Voice Recording Tool</a>
-  </nav>
+<div id="sidebar" style="display:none; position:fixed; top:0; left:0; height:100%; width:200px; background:#111; color:white; padding:20px;">
+  <a href="home.html" style="color:white; display:block; margin:10px 0;">Home</a>
+  <a href="webcam.html" style="color:white; display:block; margin:10px 0;">WebCam Tool</a>
+  <a href="robloxc.html" style="color:white; display:block; margin:10px 0;">RobloxC Detector</a>
+  <a href="discord.html" style="color:white; display:block; margin:10px 0;">Discord Server</a>
+  <a href="voice.html" style="color:white; display:block; margin:10px 0;">Voice Recording Tool</a>
+</div>
 
-  <div class="title">Valkz Tools</div>
-
-  <script>
-    // Check authentication session
-    const expires = parseInt(localStorage.getItem("authenticated") || "0", 10);
-    if (Date.now() > expires) {
-      window.location.href = "index.html";
-    }
-
-    // Show page with fade-in effect
-    window.onload = () => {
-      document.body.classList.add("visible");
-    };
-
-    // Sidebar toggle
-    const menuIcon = document.getElementById("menuIcon");
-    const sidebar = document.getElementById("sidebar");
-
-    menuIcon.addEventListener("click", () => {
-      sidebar.classList.toggle("show");
-    });
-    // Accessibility: toggle via keyboard
-    menuIcon.addEventListener("keypress", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        sidebar.classList.toggle("show");
-      }
-    });
-  </script>
+<script>
+  function toggleSidebar() {
+    const sb = document.getElementById("sidebar");
+    sb.style.display = sb.style.display === "block" ? "none" : "block";
+  }
+</script>
 </body>
 </html>
