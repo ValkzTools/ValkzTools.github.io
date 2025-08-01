@@ -29,6 +29,8 @@
       gap:20px;
       z-index:10;
       border-right:2px solid rgba(255,255,255,0.08);
+      /* hidden by default */
+      display: none;
     }
     .sidebar h2 {
       font-size:1.2rem;
@@ -104,8 +106,7 @@
   </style>
 </head>
 <body>
-  <!-- Sidebar always present but hidden link highlight can be styled if needed -->
-  <div class="sidebar" id="sidebar" style="opacity:0.3;">
+  <div class="sidebar" id="sidebar">
     <h2>Valkz Tools</h2>
     <a class="nav-link" href="login.html">Login</a>
     <a class="nav-link" href="webcam.html">Webcam</a>
@@ -117,28 +118,31 @@
   <div class="content">
     <h1>Valkz Tools</h1>
     <div class="login-box">
-      <input id="password" type="password" placeholder="Enter Password" />
+      <input id="password" type="password" placeholder="Enter Password" aria-label="password input" />
       <div>
-        <button id="loginBtn">Enter</button>
+        <button id="loginBtn" aria-label="submit password">Enter</button>
       </div>
       <div class="status" id="status" style="display:none;"></div>
     </div>
   </div>
 
   <script>
-    const correct = "letmein"; // change as desired
+    const correct = "YGisthebest1";
     const loginBtn = document.getElementById("loginBtn");
     const statusEl = document.getElementById("status");
     const sidebar = document.getElementById("sidebar");
+    const pwInput = document.getElementById("password");
 
     function showSuccess() {
-      statusEl.textContent = "Success!";
+      statusEl.textContent = "Success! Sidebar unlocked.";
       statusEl.style.display = "block";
       statusEl.style.color = "#00ff88";
       statusEl.style.background = "rgba(0,255,136,0.1)";
       statusEl.style.padding = "8px 14px";
       statusEl.style.borderRadius = "8px";
-      sidebar.style.opacity = "1";
+      sidebar.style.display = "flex";
+      pwInput.value = "";
+      pwInput.blur();
     }
 
     function showError() {
@@ -148,11 +152,11 @@
       statusEl.style.background = "rgba(255,107,107,0.1)";
       statusEl.style.padding = "8px 14px";
       statusEl.style.borderRadius = "8px";
-      sidebar.style.opacity = "0.3";
+      sidebar.style.display = "none";
     }
 
     loginBtn.addEventListener("click", ()=> {
-      const p = document.getElementById("password").value;
+      const p = pwInput.value;
       if(p === correct){
         showSuccess();
       } else {
@@ -160,7 +164,7 @@
       }
     });
 
-    document.getElementById("password").addEventListener("keyup", e=>{
+    pwInput.addEventListener("keyup", e=>{
       if(e.key === "Enter") loginBtn.click();
     });
   </script>
