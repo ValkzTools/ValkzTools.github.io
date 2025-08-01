@@ -1,10 +1,85 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>RobloxC Detector</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
-<style>
-  body{margin:0;font-family:'Orbitron',sans-serif;background:radial-gradient(circle at center,#5f3dc4,#2b2d91);color:white;display:flex;align-items:center;justify-content:center;height:100vh;}
-  h1{font-size:2rem;}
-</style></head><body>
-  <script>const exp=+localStorage.getItem('authenticated'); if(Date.now()>exp) location='index.html';</script>
-  <h1>RobloxC Detector</h1>
-</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Robloxc</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" relstylesheet>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body {
+      min-height:100vh;
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg,#6a3fb5,#3b8cff);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      padding:20px 20px 40px 240px;
+    }
+    .sidebar {
+      position: fixed;
+      left:0;
+      top:0;
+      bottom:0;
+      width:220px;
+      background: rgba(0,0,0,0.15);
+      backdrop-filter: blur(10px);
+      padding:25px 15px;
+      display:flex;
+      flex-direction:column;
+      gap:20px;
+      z-index:10;
+      border-right:2px solid rgba(255,255,255,0.08);
+    }
+    .sidebar h2 { font-size:1.2rem; margin-bottom:5px; letter-spacing:1px; }
+    .nav-link {
+      text-decoration:none;
+      color:#fff;
+      padding:10px 12px;
+      border-radius:8px;
+      display:block;
+      font-weight:600;
+      transition: background .2s;
+    }
+    .nav-link:hover { background: rgba(255,255,255,0.08); }
+    .nav-link.active { background: rgba(255,255,255,0.15); }
+    .card {
+      background: rgba(255,255,255,0.05);
+      padding:40px;
+      border-radius:15px;
+      text-align:center;
+      backdrop-filter: blur(6px);
+      max-width:700px;
+    }
+    h1 { font-size:3rem; margin-bottom:10px; }
+    p { font-size:1.2rem; margin-top:10px; }
+    .coming {
+      margin-top:25px;
+      padding:12px 25px;
+      background: #ffe600;
+      color:#000;
+      border-radius:10px;
+      display:inline-block;
+      font-weight:700;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Valkz Tools</h2>
+    <a class="nav-link" href="Login.html">Login</a>
+    <a class="nav-link" href="Webcam.html">Webcam</a>
+    <a class="nav-link" href="Voice Recorder.html">Voice Recorder</a>
+    <a class="nav-link" href="Discord.html">Discord</a>
+    <a class="nav-link active" href="Robloxc.html">Robloxc</a>
+  </div>
+
+  <div class="card">
+    <h1>Robloxc</h1>
+    <p>Welcome to Robloxc Tools. More features coming soon.</p>
+    <div class="coming">Stay tuned</div>
+  </div>
+</body>
+</html>
