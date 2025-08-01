@@ -1,157 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WebCam Tool</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Webcam Recorder</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
   <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
     body {
-      margin: 0;
+      min-height:100vh;
       font-family: 'Orbitron', sans-serif;
-      background: radial-gradient(circle at center, #5f3dc4, #2b2d91);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
+      background: linear-gradient(135deg,#6a3fb5,#3b8cff);
+      color:#fff;
+      padding:20px 20px 40px 240px;
     }
-    h1 {
-      font-size: 2rem;
-      margin: 20px;
+    .sidebar {
+      position: fixed;
+      left:0;
+      top:0;
+      bottom:0;
+      width:220px;
+      background: rgba(0,0,0,0.15);
+      backdrop-filter: blur(10px);
+      padding:25px 15px;
+      display:flex;
+      flex-direction:column;
+      gap:20px;
+      z-index:10;
+      border-right:2px solid rgba(255,255,255,0.08);
+    }
+    .sidebar h2 { font-size:1.2rem; margin-bottom:5px; letter-spacing:1px; }
+    .nav-link {
+      text-decoration:none;
+      color:#fff;
+      padding:10px 12px;
+      border-radius:8px;
+      display:block;
+      font-weight:600;
+      transition: background .2s;
+    }
+    .nav-link:hover { background: rgba(255,255,255,0.08); }
+    .nav-link.active { background: rgba(255,255,255,0.15); }
+    h1 { text-align:center; margin-bottom:10px; }
+    .panel {
+      max-width:1100px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:20px;
+      padding:10px;
+    }
+    .box {
+      background: rgba(255,255,255,0.05);
+      border-radius:12px;
+      padding:15px;
+      backdrop-filter: blur(6px);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    label { font-size:0.9rem; margin-top:5px; }
+    select, button {
+      padding:10px;
+      border-radius:8px;
+      border:none;
+      font-family: inherit;
+      font-size:1rem;
+      outline:none;
+      cursor:pointer;
     }
     video {
-      width: 960px;
-      height: 540px;
-      border-radius: 15px;
-      border: 3px solid #8884ff;
-      background: black;
+      width:100%;
+      border-radius:12px;
+      background:#000;
     }
     .controls {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 15px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
     }
-    select, button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-      color: white;
+    .status {
+      margin-top:8px;
+      font-size:0.85rem;
     }
-    select {
-      background: #2c2670;
+    a.download-link {
+      display:inline-block;
+      margin-top:10px;
+      background:#ffe600;
+      color:#000;
+      padding:10px 18px;
+      border-radius:10px;
+      text-decoration:none;
+      font-weight:700;
     }
-    button {
-      background: #3a34a0;
-    }
-    button:hover {
-      background: #4e45cc;
+    .note {
+      font-size:0.75rem;
+      opacity:0.9;
+      margin-top:6px;
     }
   </style>
 </head>
 <body>
+  <div class="sidebar">
+    <h2>Valkz Tools</h2>
+    <a class="nav-link" href="Login.html">Login</a>
+    <a class="nav-link active" href="Webcam.html">Webcam</a>
+    <a class="nav-link" href="Voice Recorder.html">Voice Recorder</a>
+    <a class="nav-link" href="Discord.html">Discord</a>
+    <a class="nav-link" href="Robloxc.html">Robloxc</a>
+  </div>
 
-  <h1>WebCam Tool</h1>
-  <video id="preview" autoplay muted playsinline></video>
-  <div class="controls">
-    <select id="videoSource"></select>
-    <select id="audioSource"></select>
-    <button id="startBtn">Start Recording</button>
-    <button id="stopBtn" disabled>Stop & Download</button>
+  <div style="padding-top:10px;">
+    <h1>Webcam Recorder</h1>
+    <div class="panel">
+      <div class="box">
+        <div>
+          <label for="videoSource">Camera:</label>
+          <select id="videoSource"></select>
+        </div>
+        <div>
+          <label for="audioSource">Microphone:</label>
+          <select id="audioSource"></select>
+        </div>
+        <div class="controls">
+          <button id="startBtn">Start Preview</button>
+          <button id="startRec">Start Recording</button>
+          <button id="stopRec" disabled>Stop Recording</button>
+        </div>
+        <div class="status" id="status">Idle.</div>
+        <div class="note">Desktop audio may only be available when you grant screen sharing with audio; some OS/browser combos restrict system audio capture.</div>
+        <div>
+          <label><input type="checkbox" id="includeDesktop" /> Include Desktop Audio (screen capture)</label>
+        </div>
+        <div id="downloadContainer"></div>
+      </div>
+      <div class="box">
+        <video id="preview" autoplay muted playsinline></video>
+        <div class="status" id="resolutionInfo">Resolution & FPS info will appear here.</div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const videoElem = document.getElementById('preview');
-    const vs = document.getElementById('videoSource');
-    const asrc = document.getElementById('audioSource');
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
+    let currentStream = null;
+    let recorder = null;
+    let recordedChunks = [];
+    let mixedStream = null;
 
-    let mediaRecorder, recorded = [], currentStream;
+    const videoSelect = document.getElementById("videoSource");
+    const audioSelect = document.getElementById("audioSource");
+    const preview = document.getElementById("preview");
+    const startBtn = document.getElementById("startBtn");
+    const startRec = document.getElementById("startRec");
+    const stopRec = document.getElementById("stopRec");
+    const statusEl = document.getElementById("status");
+    const resolutionInfo = document.getElementById("resolutionInfo");
+    const downloadContainer = document.getElementById("downloadContainer");
+    const includeDesktopCheckbox = document.getElementById("includeDesktop");
 
-    async function updateDevices() {
+    async function populateDevices(){
       const devices = await navigator.mediaDevices.enumerateDevices();
-      vs.innerHTML = '';
-      asrc.innerHTML = '';
-      devices.forEach(d => {
-        const o = document.createElement('option');
-        o.value = d.deviceId;
-        o.text = d.label || d.kind;
-        if (d.kind === 'videoinput') vs.appendChild(o);
-        else if (d.kind === 'audioinput') asrc.appendChild(o);
+      videoSelect.innerHTML="";
+      audioSelect.innerHTML="";
+      devices.forEach(d=>{
+        const option = document.createElement("option");
+        option.value = d.deviceId;
+        if(d.kind === "videoinput"){
+          option.text = d.label || `Camera ${videoSelect.length+1}`;
+          videoSelect.appendChild(option);
+        } else if(d.kind === "audioinput"){
+          option.text = d.label || `Mic ${audioSelect.length+1}`;
+          audioSelect.appendChild(option);
+        }
       });
     }
 
-    async function startStream() {
-      if (currentStream) currentStream.getTracks().forEach(t => t.stop());
-
-      const constraints = {
-        video: {
-          deviceId: vs.value ? { exact: vs.value } : undefined,
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 60 }
-        },
-        audio: {
-          deviceId: asrc.value ? { exact: asrc.value } : undefined
-        }
-      };
-
+    async function startPreview(){
+      if(currentStream){
+        currentStream.getTracks().forEach(t=>t.stop());
+      }
+      const videoId = videoSelect.value;
       try {
-        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-        videoElem.srcObject = currentStream;
-      } catch (e) {
-        alert('Media error: ' + e.message);
-      }
-    }
-
-    vs.onchange = asrc.onchange = startStream;
-
-    startBtn.onclick = async () => {
-      await startStream();
-      recorded = [];
-
-      const options = { mimeType: 'video/webm;codecs=vp9,opus' };
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        alert("This browser doesn't support VP9. Trying VP8...");
-        options.mimeType = 'video/webm;codecs=vp8,opus';
-      }
-
-      try {
-        mediaRecorder = new MediaRecorder(currentStream, options);
-      } catch (e) {
-        alert('MediaRecorder error: ' + e.message);
-        return;
-      }
-
-      mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) recorded.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recorded, { type: options.mimeType });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'recording.webm';
-        a.click();
-      };
-
-      mediaRecorder.start();
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
-    };
-
-    stopBtn.onclick = () => {
-      mediaRecorder.stop();
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-    };
-
-    updateDevices();
-  </script>
-</body>
-</html>
+        const constraints = {
+          video: {
+            deviceId: videoId ? { exact:videoId } : undefined,
+            width: { ideal:1920 },
+            height: { idea
