@@ -59,7 +59,7 @@
       flex-direction:column;
       gap:10px;
     }
-    label { font-size:0.9rem; margin-top:5px; }
+    label { font-size:0.9rem; margin-top:5px; display:block; }
     select, button {
       padding:10px;
       border-radius:8px;
@@ -98,16 +98,27 @@
       opacity:0.9;
       margin-top:6px;
     }
+    .device-list {
+      background: rgba(255,255,255,0.07);
+      padding:10px;
+      border-radius:8px;
+      font-size:0.8rem;
+      max-height:150px;
+      overflow:auto;
+    }
+    .device-item {
+      margin-bottom:4px;
+    }
   </style>
 </head>
 <body>
   <div class="sidebar">
     <h2>Valkz Tools</h2>
-    <a class="nav-link" href="login.html">Login</a>
-    <a class="nav-link" href="webcam.html">Webcam</a>
-    <a class="nav-link" href="voice Recorder.html">Voice Recorder</a>
-    <a class="nav-link" href="discord.html">Discord</a>
-    <a class="nav-link" href="robloxc.html">Robloxc</a>
+    <a class="nav-link" href="Login.html">Login</a>
+    <a class="nav-link active" href="Webcam.html">Webcam</a>
+    <a class="nav-link" href="Voice Recorder.html">Voice Recorder</a>
+    <a class="nav-link" href="Discord.html">Discord</a>
+    <a class="nav-link" href="Robloxc.html">Robloxc</a>
   </div>
 
   <div style="padding-top:10px;">
@@ -123,14 +134,19 @@
           <select id="audioSource"></select>
         </div>
         <div class="controls">
+          <button id="refreshDevices">Refresh Devices</button>
           <button id="startBtn">Start Preview</button>
           <button id="startRec">Start Recording</button>
           <button id="stopRec" disabled>Stop Recording</button>
         </div>
-        <div class="status" id="status">Idle.</div>
-        <div class="note">Desktop audio may only be available when you grant screen sharing with audio; some OS/browser combos restrict system audio capture.</div>
+        <div class="status" id="status">Idle. Request permissions to enumerate devices.</div>
+        <div class="note">Desktop audio may only work if you allow screen share with audio. Some platforms limit system audio capture.</div>
         <div>
           <label><input type="checkbox" id="includeDesktop" /> Include Desktop Audio (screen capture)</label>
+        </div>
+        <div>
+          <strong>Detected devices:</strong>
+          <div class="device-list" id="deviceList">— none yet —</div>
         </div>
         <div id="downloadContainer"></div>
       </div>
@@ -142,7 +158,7 @@
   </div>
 
   <script>
-    let currentStream = null;
+    let currentPreviewStream = null;
     let recorder = null;
     let recordedChunks = [];
     let mixedStream = null;
@@ -157,12 +173,29 @@
     const resolutionInfo = document.getElementById("resolutionInfo");
     const downloadContainer = document.getElementById("downloadContainer");
     const includeDesktopCheckbox = document.getElementById("includeDesktop");
+    const deviceListDiv = document.getElementById("deviceList");
+    const refreshBtn = document.getElementById("refreshDevices");
+
+    // Ensure we have permission first so labels appear
+    async function ensurePermissions() {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      } catch (e) {
+        // user might deny; still try enumerating
+        console.warn("Permission prompt suppressed or denied:", e);
+      }
+    }
 
     async function populateDevices(){
+      await ensurePermissions();
       const devices = await navigator.mediaDevices.enumerateDevices();
       videoSelect.innerHTML="";
       audioSelect.innerHTML="";
-      devices.forEach(d=>{
+      deviceListDiv.innerHTML = "";
+      if(devices.length === 0){
+        deviceListDiv.textContent = "No media devices found.";
+      }
+      devices.forEach((d, idx)=>{
         const option = document.createElement("option");
         option.value = d.deviceId;
         if(d.kind === "videoinput"){
@@ -172,17 +205,194 @@
           option.text = d.label || `Mic ${audioSelect.length+1}`;
           audioSelect.appendChild(option);
         }
+        // visible list
+        const div = document.createElement("div");
+        div.className = "device-item";
+        div.textContent = `[${d.kind}] ${d.label || "Unnamed"} (id: ${d.deviceId})`;
+        deviceListDiv.appendChild(div);
       });
+
+      // if none selected, choose first available
+      if(!videoSelect.value && videoSelect.options.length) videoSelect.selectedIndex = 0;
+      if(!audioSelect.value && audioSelect.options.length) audioSelect.selectedIndex = 0;
     }
 
     async function startPreview(){
-      if(currentStream){
-        currentStream.getTracks().forEach(t=>t.stop());
+      // stop previous preview
+      if(currentPreviewStream){
+        currentPreviewStream.getTracks().forEach(t => t.stop());
       }
       const videoId = videoSelect.value;
       try {
         const constraints = {
           video: {
-            deviceId: videoId ? { exact:videoId } : undefined,
-            width: { ideal:1920 },
-            height: { idea
+            deviceId: videoId ? { exact: videoId } : undefined,
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 60, max: 60 }
+          },
+          audio: false
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        currentPreviewStream = stream;
+        preview.srcObject = stream;
+        const settings = stream.getVideoTracks()[0].getSettings();
+        resolutionInfo.textContent = `Preview: ${settings.width || ''}x${settings.height || ''} @ ${settings.frameRate || ''}fps (camera).`;
+        statusEl.textContent = "Preview active.";
+      } catch (e){
+        console.error("Preview error:", e);
+        statusEl.textContent = "Error starting preview: " + e.message;
+      }
+    }
+
+    async function startRecording(){
+      startRec.disabled = true;
+      stopRec.disabled = false;
+      recordedChunks = [];
+      downloadContainer.innerHTML = "";
+      statusEl.textContent = "Preparing recording...";
+
+      const videoId = videoSelect.value;
+      const audioId = audioSelect.value;
+      const includeDesktop = includeDesktopCheckbox.checked;
+
+      // obtain video
+      let videoStream;
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            deviceId: videoId ? { exact: videoId } : undefined,
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 60, max: 60 }
+          },
+          audio: false
+        });
+      } catch (e){
+        console.error("Video access failed:", e);
+        statusEl.textContent = "Video access failed: " + e.message;
+        startRec.disabled = false;
+        stopRec.disabled = true;
+        return;
+      }
+
+      // obtain microphone
+      let micStream = null;
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: { deviceId: audioId ? { exact: audioId } : undefined }
+        });
+      } catch (e){
+        console.warn("Microphone access failed:", e);
+      }
+
+      // desktop audio via display media
+      let desktopStream = null;
+      if(includeDesktop){
+        try {
+          desktopStream = await navigator.mediaDevices.getDisplayMedia({ video: false, audio: true });
+        } catch (e){
+          console.warn("Desktop audio capture failed:", e);
+        }
+      }
+
+      // mix audio tracks
+      const audioContext = new AudioContext();
+      const destination = audioContext.createMediaStreamDestination();
+
+      if(micStream){
+        try {
+          const micSource = audioContext.createMediaStreamSource(micStream);
+          micSource.connect(destination);
+        } catch (e){
+          console.warn("Mic mixing error:", e);
+        }
+      }
+      if(desktopStream){
+        try {
+          const desktopSource = audioContext.createMediaStreamSource(desktopStream);
+          desktopSource.connect(destination);
+        } catch (e){
+          console.warn("Desktop mixing error:", e);
+        }
+      }
+
+      // build final stream: video + mixed audio (fallback to mic only)
+      const finalStream = new MediaStream();
+      videoStream.getVideoTracks().forEach(t => finalStream.addTrack(t));
+      if(destination.stream.getAudioTracks().length){
+        destination.stream.getAudioTracks().forEach(t => finalStream.addTrack(t));
+      } else if (micStream){
+        micStream.getAudioTracks().forEach(t => finalStream.addTrack(t));
+      }
+
+      // show preview of combined (muted to avoid echo)
+      preview.srcObject = finalStream;
+      preview.muted = true;
+
+      // decide mime
+      let options = {};
+      if(MediaRecorder.isTypeSupported('video/webm;codecs=vp9')){
+        options.mimeType = 'video/webm;codecs=vp9';
+      } else if(MediaRecorder.isTypeSupported('video/webm;codecs=vp8')){
+        options.mimeType = 'video/webm;codecs=vp8';
+      } else {
+        options.mimeType = 'video/webm';
+      }
+
+      try {
+        recorder = new MediaRecorder(finalStream, options);
+      } catch (e){
+        console.error("Recorder init failed:", e);
+        statusEl.textContent = "Recording failed: " + e.message;
+        startRec.disabled = false;
+        stopRec.disabled = true;
+        return;
+      }
+
+      recorder.ondataavailable = e => {
+        if(e.data && e.data.size) recordedChunks.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: options.mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `recording_${Date.now()}.webm`;
+        a.textContent = "Download Recording";
+        a.className = "download-link";
+        downloadContainer.innerHTML = "";
+        downloadContainer.appendChild(a);
+        statusEl.textContent = "Recording stopped. Ready to download.";
+      };
+
+      recorder.start(100); // chunk size
+      statusEl.textContent = "Recording...";
+      mixedStream = finalStream;
+    }
+
+    function stopRecording(){
+      if(recorder && recorder.state !== "inactive"){
+        recorder.stop();
+      }
+      if(mixedStream){
+        mixedStream.getTracks().forEach(t => t.stop());
+      }
+      startRec.disabled = false;
+      stopRec.disabled = true;
+    }
+
+    // event hookups
+    refreshBtn.addEventListener("click", populateDevices);
+    startBtn.addEventListener("click", startPreview);
+    startRec.addEventListener("click", startRecording);
+    stopRec.addEventListener("click", stopRecording);
+
+    // update devices if they change (hot-plug)
+    navigator.mediaDevices.addEventListener && navigator.mediaDevices.addEventListener('devicechange', populateDevices);
+
+    // initial enumeration
+    populateDevices();
+  </script>
+</body>
+</html>
