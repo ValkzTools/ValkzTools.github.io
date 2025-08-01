@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Voice Recorder</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" relstylesheet>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
     body {
@@ -50,7 +50,7 @@
       padding:20px;
       border-radius:12px;
       width:100%;
-      max-width:600px;
+      max-width:700px;
       display:flex;
       flex-direction:column;
       gap:15px;
@@ -63,14 +63,20 @@
       font-family: inherit;
       font-size:1rem;
       cursor:pointer;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      transition: filter .2s;
     }
+    select:focus, button:focus { outline:2px solid rgba(255,255,255,0.5); }
+    select { appearance: none; }
     .controls {
       display:flex;
       gap:10px;
       flex-wrap:wrap;
     }
     .status { font-size:0.9rem; }
-    audio { width:100%; margin-top:10px; }
+    audio { width:100%; margin-top:10px; background:#222; border-radius:6px; }
+    .small { font-size:0.75rem; opacity:0.85; margin-top:4px; }
   </style>
 </head>
 <body>
@@ -78,7 +84,7 @@
     <h2>Valkz Tools</h2>
     <a class="nav-link" href="index.html">Login</a>
     <a class="nav-link" href="webcam.html">Webcam</a>
-    <a class="nav-link" href="voice Recorder.html">Voice Recorder</a>
+    <a class="nav-link active" href="voice Recorder.html">Voice Recorder</a>
     <a class="nav-link" href="discord.html">Discord</a>
     <a class="nav-link" href="robloxc.html">Robloxc</a>
   </div>
@@ -89,21 +95,285 @@
       <div>
         <label for="micSelect">Microphone:</label>
         <select id="micSelect"></select>
+        <div class="small">Select the input device; permissions are required.</div>
       </div>
       <div class="controls">
         <button id="start">Start Recording</button>
         <button id="stop" disabled>Stop</button>
         <button id="play" disabled>Play</button>
-        <button id="download" disabled>Download</button>
+        <button id="download" disabled>Download MP3</button>
       </div>
       <div class="status" id="status">Idle.</div>
       <audio id="audioPlayback" controls></audio>
+      <div class="small">Recorded audio is encoded to MP3 (128kbps, 44.1kHz) in-browser.</div>
     </div>
   </div>
 
-  <script>
-    let mediaRecorder;
-    let chunks = [];
-    let audioBlob;
+  <!-- lamejs for mp3 encoding -->
+  <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script>
 
-    const micS
+  <script>
+    let audioContext;
+    let processor;
+    let input;
+    let recording = false;
+    let leftChannel = [];
+    let rightChannel = [];
+    let recordingLength = 0;
+    let sampleRate = 44100; // target
+    let mp3Blob = null;
+    let currentStream = null;
+
+    const micSelect = document.getElementById('micSelect');
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+    const playBtn = document.getElementById('play');
+    const downloadBtn = document.getElementById('download');
+    const statusEl = document.getElementById('status');
+    const audioPlayback = document.getElementById('audioPlayback');
+
+    function logStatus(msg) {
+      statusEl.textContent = msg;
+    }
+
+    async function populateMicList() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const mics = devices.filter(d => d.kind === 'audioinput');
+
+        micSelect.innerHTML = '';
+        if (mics.length === 0) {
+          const opt = document.createElement('option');
+          opt.textContent = 'No microphone found';
+          micSelect.appendChild(opt);
+          micSelect.disabled = true;
+          logStatus('No microphone devices detected.');
+          return;
+        }
+
+        mics.forEach((mic, idx) => {
+          const option = document.createElement('option');
+          option.value = mic.deviceId;
+          // some labels may be empty until permission granted
+          option.textContent = mic.label || `Microphone ${idx + 1}`;
+          micSelect.appendChild(option);
+        });
+      } catch (err) {
+        console.error(err);
+        logStatus('Error enumerating devices: ' + err.message);
+      }
+    }
+
+    async function getStreamForSelectedMic() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
+        currentStream = null;
+      }
+      const deviceId = micSelect.value;
+      try {
+        const constraints = {
+          audio: {
+            deviceId: deviceId ? { exact: deviceId } : undefined,
+            channelCount: 2,
+            sampleRate: sampleRate
+          }
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        currentStream = stream;
+        return stream;
+      } catch (err) {
+        console.error('getUserMedia error', err);
+        throw err;
+      }
+    }
+
+    function startRecording(stream) {
+      if (recording) return;
+      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate });
+      input = audioContext.createMediaStreamSource(stream);
+
+      // create a ScriptProcessorNode to access raw audio
+      const bufferSize = 4096;
+      processor = audioContext.createScriptProcessor(bufferSize, 2, 2);
+
+      input.connect(processor);
+      processor.connect(audioContext.destination); // required or some browsers won't fire onaudioprocess
+
+      processor.onaudioprocess = function(e) {
+        if (!recording) return;
+        const left = e.inputBuffer.getChannelData(0);
+        const right = e.inputBuffer.getChannelData(1);
+        // clone
+        leftChannel.push(new Float32Array(left));
+        rightChannel.push(new Float32Array(right));
+        recordingLength += left.length;
+      };
+
+      recording = true;
+      leftChannel = [];
+      rightChannel = [];
+      recordingLength = 0;
+
+      logStatus('Recording...');
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      playBtn.disabled = true;
+      downloadBtn.disabled = true;
+      mp3Blob = null;
+      audioPlayback.src = '';
+    }
+
+    function mergeBuffers(channelBuffer, recordingLength) {
+      const result = new Float32Array(recordingLength);
+      let offset = 0;
+      for (let i = 0; i < channelBuffer.length; i++) {
+        result.set(channelBuffer[i], offset);
+        offset += channelBuffer[i].length;
+      }
+      return result;
+    }
+
+    function interleave(left, right) {
+      const length = left.length + right.length;
+      const result = new Float32Array(length);
+      let index = 0;
+      let inputIndex = 0;
+      while (index < length) {
+        result[index++] = left[inputIndex];
+        result[index++] = right[inputIndex];
+        inputIndex++;
+      }
+      return result;
+    }
+
+    function floatTo16BitPCM(floatBuffer) {
+      const output = new Int16Array(floatBuffer.length);
+      for (let i = 0; i < floatBuffer.length; i++) {
+        let s = Math.max(-1, Math.min(1, floatBuffer[i]));
+        output[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      }
+      return output;
+    }
+
+    function encodeMP3(leftFinal, rightFinal) {
+      // interleave and encode as MP3 stereo 128kbps
+      const mp3encoder = new lamejs.Mp3Encoder(2, sampleRate, 128);
+      const blockSize = 1152; // samples per channel
+      const mp3Data = [];
+
+      let left = floatTo16BitPCM(leftFinal);
+      let right = floatTo16BitPCM(rightFinal);
+      let samples = left.length; // both same
+
+      let maxSamples = Math.max(left.length, right.length);
+      let ptr = 0;
+      while (ptr < maxSamples) {
+        const leftChunk = left.subarray(ptr, ptr + blockSize);
+        const rightChunk = right.subarray(ptr, ptr + blockSize);
+        const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+        if (mp3buf.length > 0) mp3Data.push(mp3buf);
+        ptr += blockSize;
+      }
+      const endBuf = mp3encoder.flush();
+      if (endBuf.length > 0) mp3Data.push(endBuf);
+      return new Blob(mp3Data, { type: 'audio/mp3' });
+    }
+
+    function stopRecording() {
+      if (!recording) return;
+      recording = false;
+
+      // disconnect
+      if (processor) {
+        processor.disconnect();
+        processor.onaudioprocess = null;
+      }
+      if (input) input.disconnect();
+      if (audioContext) audioContext.close();
+
+      logStatus('Processing audio...');
+      // merge
+      const leftFinal = mergeBuffers(leftChannel, recordingLength);
+      const rightFinal = mergeBuffers(rightChannel, recordingLength);
+
+      // encode to mp3
+      try {
+        mp3Blob = encodeMP3(leftFinal, rightFinal);
+      } catch (err) {
+        console.error('MP3 encoding error', err);
+        logStatus('MP3 encoding failed: ' + err.message);
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        return;
+      }
+
+      const url = URL.createObjectURL(mp3Blob);
+      audioPlayback.src = url;
+      audioPlayback.load();
+
+      logStatus('Recording complete. Ready to play or download.');
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      playBtn.disabled = false;
+      downloadBtn.disabled = false;
+    }
+
+    startBtn.addEventListener('click', async () => {
+      try {
+        await populateMicList(); // ensure list updated/labels visible if permission just granted
+        const stream = await getStreamForSelectedMic();
+        startRecording(stream);
+      } catch (err) {
+        logStatus('Could not start recording: ' + (err.message || err));
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      stopRecording();
+    });
+
+    playBtn.addEventListener('click', () => {
+      if (!mp3Blob) return;
+      audioPlayback.play();
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if (!mp3Blob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(mp3Blob);
+      const now = new Date();
+      const stamp = now.toISOString().replace(/[:.]/g, '-');
+      a.download = `recording-${stamp}.mp3`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+
+    micSelect.addEventListener('change', async () => {
+      // if currently have stream and not recording, switch to new mic quietly
+      if (!recording) {
+        try {
+          await getStreamForSelectedMic(); // preemptively get permission switch
+          logStatus('Microphone changed (ready).');
+        } catch (err) {
+          logStatus('Failed to switch microphone: ' + err.message);
+        }
+      }
+    });
+
+    // On load: populate devices (may show blank labels until permission granted)
+    populateMicList();
+
+    // If device labels are empty, ask for a quick permission to populate names
+    async function warmPermissions() {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        await populateMicList();
+      } catch (e) {
+        // user denied; ignore
+      }
+    }
+    warmPermissions();
+  </script>
+</body>
+</html>
