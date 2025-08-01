@@ -1,53 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Valkz Tools</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Valkz Tools Login</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    body{margin:0;font-family:'Orbitron',sans-serif;background:radial-gradient(circle at top left,#6d28d9,#3b82f6);color:white;overflow:hidden;}
-    .title{text-align:center;font-size:3em;margin-top:60px;animation:flicker 2s infinite;}
-    @keyframes flicker{0%,100%{color:white;}50%{color:black;}}
-    .password-container{text-align:center;margin-top:40px;}
-    .password-input{padding:10px;border:2px solid transparent;border-radius:15px;font-size:1.2em;animation:rainbow 2s linear infinite;background:rgba(255,255,255,0.1);color:white;}
-    @keyframes rainbow{0%{border-color:red;}25%{border-color:orange;}50%{border-color:yellow;}75%{border-color:green;}100%{border-color:red;}}
-    .hidden{display:none;} .sidebar-toggle{position:absolute;top:20px;left:20px;cursor:pointer;display:none;}
-    .bar{width:30px;height:4px;background:white;margin:6px 0;}
-    .sidebar{height:100%;width:250px;position:fixed;top:0;left:-250px;background:rgba(0,0,0,0.85);padding-top:60px;transition:0.3s;}
-    .sidebar a{padding:15px 25px;display:block;color:white;text-decoration:none;font-size:1.2em;transition:0.3s;}
-    .sidebar a:hover{background:#6d28d9;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body {
+      min-height:100vh;
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg,#6a3fb5,#3b8cff);
+      display:flex;
+      color:#fff;
+    }
+    .sidebar {
+      position: fixed;
+      left:0;
+      top:0;
+      bottom:0;
+      width:220px;
+      background: rgba(0,0,0,0.15);
+      backdrop-filter: blur(10px);
+      padding:25px 15px;
+      display:flex;
+      flex-direction:column;
+      gap:20px;
+      z-index:10;
+      border-right:2px solid rgba(255,255,255,0.08);
+    }
+    .sidebar h2 {
+      font-size:1.2rem;
+      margin-bottom:5px;
+      letter-spacing:1px;
+    }
+    .nav-link {
+      text-decoration:none;
+      color:#fff;
+      padding:10px 12px;
+      border-radius:8px;
+      display:block;
+      font-weight:600;
+      transition: background .2s;
+    }
+    .nav-link:hover { background: rgba(255,255,255,0.08); }
+    .content {
+      flex:1;
+      margin:0 auto;
+      padding:80px 40px;
+      width:100%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      flex-direction:column;
+    }
+    h1 {
+      font-size:4rem;
+      margin-bottom:30px;
+      position:relative;
+      display:inline-block;
+      animation: flash 1s infinite;
+    }
+    @keyframes flash {
+      0% { color: #fff; text-shadow:0 0 20px #ffffff; }
+      50% { color: #000; text-shadow:0 0 20px #000000; }
+      100% { color: #fff; text-shadow:0 0 20px #ffffff; }
+    }
+    .login-box {
+      margin:0 auto;
+      position:relative;
+      display:inline-block;
+    }
+    input {
+      font-family: inherit;
+      font-size:1rem;
+      padding:15px 25px;
+      border:3px solid #ffe600;
+      border-radius:15px;
+      background: rgba(255,255,255,0.05);
+      color:#ddd;
+      outline:none;
+      width:300px;
+      backdrop-filter: blur(6px);
+    }
+    input::placeholder { color: #999; }
+    button {
+      margin-top:15px;
+      padding:12px 25px;
+      font-size:1rem;
+      border:none;
+      border-radius:12px;
+      cursor:pointer;
+      background: #ffe600;
+      color:#000;
+      font-weight:700;
+    }
+    .status {
+      margin-top:10px;
+      font-size:0.9rem;
+      font-weight:600;
+    }
   </style>
 </head>
 <body>
-  <div id="main-content">
-    <div class="title">Valkz Tools</div>
-    <div class="password-container">
-      <input type="password" id="password" placeholder="Enter Password" class="password-input"/>
+  <!-- Sidebar always present but hidden link highlight can be styled if needed -->
+  <div class="sidebar" id="sidebar" style="opacity:0.3;">
+    <h2>Valkz Tools</h2>
+    <a class="nav-link" href="Login.html">Login</a>
+    <a class="nav-link" href="Webcam.html">Webcam</a>
+    <a class="nav-link" href="Voice Recorder.html">Voice Recorder</a>
+    <a class="nav-link" href="Discord.html">Discord</a>
+    <a class="nav-link" href="Robloxc.html">Robloxc</a>
+  </div>
+
+  <div class="content">
+    <h1>Valkz Tools</h1>
+    <div class="login-box">
+      <input id="password" type="password" placeholder="Enter Password" />
+      <div>
+        <button id="loginBtn">Enter</button>
+      </div>
+      <div class="status" id="status" style="display:none;"></div>
     </div>
-  </div>
-  <div class="sidebar-toggle" id="menuIcon">
-    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-  </div>
-  <div class="sidebar" id="sidebar">
-    <a href="index.html">Home</a>
-    <a href="webcam.html">WebCam Tool</a>
-    <a href="robloxc.html">RobloxC Detector</a>
-    <a href="discord.html">Discord Server</a>
-    <a href="voice.html">Voice Recording Tool</a>
   </div>
 
   <script>
-    const correct = "YGisthebest1.";
-    const pwd = document.getElementById('password'), main = document.getElementById('main-content'), menu = document.getElementById('menuIcon');
-    pwd.addEventListener('keypress', e => {
-      if(e.key==='Enter'&&pwd.value===correct){
-        main.style.transition='opacity 1s'; main.style.opacity=0;
-        setTimeout(()=>{main.classList.add('hidden'); menu.style.display='block';},1000);
+    const correct = "letmein"; // change as desired
+    const loginBtn = document.getElementById("loginBtn");
+    const statusEl = document.getElementById("status");
+    const sidebar = document.getElementById("sidebar");
+
+    function showSuccess() {
+      statusEl.textContent = "Success!";
+      statusEl.style.display = "block";
+      statusEl.style.color = "#00ff88";
+      statusEl.style.background = "rgba(0,255,136,0.1)";
+      statusEl.style.padding = "8px 14px";
+      statusEl.style.borderRadius = "8px";
+      sidebar.style.opacity = "1";
+    }
+
+    function showError() {
+      statusEl.textContent = "Incorrect password.";
+      statusEl.style.display = "block";
+      statusEl.style.color = "#ff6b6b";
+      statusEl.style.background = "rgba(255,107,107,0.1)";
+      statusEl.style.padding = "8px 14px";
+      statusEl.style.borderRadius = "8px";
+      sidebar.style.opacity = "0.3";
+    }
+
+    loginBtn.addEventListener("click", ()=> {
+      const p = document.getElementById("password").value;
+      if(p === correct){
+        showSuccess();
+      } else {
+        showError();
       }
     });
-    menu.addEventListener('click',()=> {
-       const sb = document.getElementById('sidebar');
-       sb.style.left = sb.style.left === '0px' ? '-250px' : '0px';
+
+    document.getElementById("password").addEventListener("keyup", e=>{
+      if(e.key === "Enter") loginBtn.click();
     });
   </script>
 </body>
