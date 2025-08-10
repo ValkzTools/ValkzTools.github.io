@@ -1,145 +1,595 @@
-// Disable dragging and resizing during recording
-function setOverlayInteraction(enabled) {
-  if (enabled) {
-    cameraOverlay.style.pointerEvents = "auto";
-    cameraOverlay.style.resize = "both";
-    cameraOverlay.tabIndex = 0; // make focusable
-  } else {
-    cameraOverlay.style.pointerEvents = "none";
-    cameraOverlay.style.resize = "none";
-    cameraOverlay.tabIndex = -1;
-  }
-}
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Screen + Webcam Recorder</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    * {box-sizing: border-box; margin: 0; padding: 0;}
+    body {
+      min-height: 100vh;
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg,#6a3fb5,#3b8cff);
+      color: #fff;
+      padding: 20px 20px 40px 240px;
+    }
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 220px;
+      background: rgba(0,0,0,0.15);
+      backdrop-filter: blur(10px);
+      padding: 25px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 10;
+      border-right: 2px solid rgba(255,255,255,0.08);
+    }
+    .sidebar h2 { font-size: 1.2rem; margin-bottom: 5px; letter-spacing: 1px; }
+    .nav-link {
+      text-decoration: none;
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 8px;
+      display: block;
+      font-weight: 600;
+      transition: background .2s;
+    }
+    .nav-link:hover { background: rgba(255,255,255,0.08); }
+    .nav-link.active { background: rgba(255,255,255,0.15); }
+    h1 { text-align: center; margin-bottom: 10px; }
+    .panel {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      padding: 10px;
+    }
+    .box {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 15px;
+      backdrop-filter: blur(6px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    label { font-size: 0.9rem; margin-top: 5px; display: block; }
+    select, button {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-family: inherit;
+      font-size: 1rem;
+      outline: none;
+      cursor: pointer;
+    }
+    #previewContainer {
+      position: relative;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      width: 100%;
+      max-height: 720px;
+    }
+    #preview {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    #cameraOverlay {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      width: 320px;
+      height: 180px;
+      border: 2px solid #fff;
+      border-radius: 10px;
+      background: black;
+      cursor: move;
+      resize: both;
+      overflow: hidden;
+      z-index: 15;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      touch-action: none;
+    }
+    #cameraVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+      pointer-events: none; /* disable direct drag on video */
+    }
+    #cameraControls {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 4px;
+      user-select: none;
+    }
+    #cameraControls button {
+      background: rgba(255,255,255,0.15);
+      border-radius: 4px;
+      border: none;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .status {
+      margin-top: 8px;
+      font-size: 0.85rem;
+    }
+    a.download-link {
+      display: inline-block;
+      margin-top: 10px;
+      background: #ffe600;
+      color: #000;
+      padding: 10px 18px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .note {
+      font-size: 0.75rem;
+      opacity: 0.9;
+      margin-top: 6px;
+    }
+    .device-list {
+      background: rgba(255,255,255,0.07);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      max-height: 150px;
+      overflow: auto;
+    }
+    .device-item {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Valkz Tools</h2>
+    <a class="nav-link" href="index.html">Login</a>
+    <a class="nav-link active" href="webcam.html">Webcam</a>
+    <a class="nav-link" href="voice recorder.html">Voice Recorder</a>
+    <a class="nav-link" href="discord.html">Discord</a>
+    <a class="nav-link" href="robloxc.html">Robloxc</a>
+  </div>
 
-// Disable dragging flags
-let isDragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-let dragStartLeft = 0;
-let dragStartBottom = 0;
+  <div style="padding-top:10px;">
+    <h1>Screen + Webcam Recorder</h1>
+    <div class="panel">
+      <div class="box">
+        <div>
+          <label for="videoSource">Camera:</label>
+          <select id="videoSource"></select>
+        </div>
+        <div>
+          <label for="audioSource">Microphone:</label>
+          <select id="audioSource"></select>
+        </div>
+        <div>
+          <label><input type="checkbox" id="includeDesktop" checked disabled /> Screen capture is always included</label>
+        </div>
+        <div class="controls" style="margin-top:10px;">
+          <button id="startRec">Start Recording</button>
+          <button id="stopRec" disabled>Stop Recording</button>
+        </div>
+        <div class="status" id="status">Idle. Loading devices...</div>
+        <div class="note">The recording will include your screen and camera overlay at 60fps, saved as MP4 if supported.</div>
+        <div>
+          <strong>Detected devices:</strong>
+          <div class="device-list" id="deviceList">— none yet —</div>
+        </div>
+        <div id="downloadContainer"></div>
+      </div>
+      <div class="box" id="previewContainer">
+        <video id="preview" autoplay muted playsinline></video>
+        <div id="cameraOverlay" tabindex="0">
+          <video id="cameraVideo" autoplay muted playsinline></video>
+          <div id="cameraControls">
+            <button id="upBtn" title="Move Up">↑</button>
+            <button id="leftBtn" title="Move Left">←</button>
+            <button id="downBtn" title="Move Down">↓</button>
+            <button id="rightBtn" title="Move Right">→</button>
+          </div>
+        </div>
+        <div class="status" id="resolutionInfo">Loading preview...</div>
+      </div>
+    </div>
+  </div>
 
-// Dragging handlers (only if interaction enabled)
-cameraOverlay.addEventListener('mousedown', (e) => {
-  if(!cameraOverlay.style.pointerEvents || cameraOverlay.style.pointerEvents === "none") return;
-  if(e.target !== cameraOverlay) return; // only drag if outer container
-  isDragging = true;
-  dragStartX = e.clientX;
-  dragStartY = e.clientY;
-  dragStartLeft = overlayPos.left;
-  dragStartBottom = overlayPos.bottom;
-  e.preventDefault();
-});
-window.addEventListener('mouseup', () => { isDragging = false; });
-window.addEventListener('mousemove', (e) => {
-  if(!isDragging) return;
-  const dx = e.clientX - dragStartX;
-  const dy = e.clientY - dragStartY;
-  overlayPos.left = Math.min(Math.max(dragStartLeft + dx, 0), preview.clientWidth - overlaySize.width);
-  overlayPos.bottom = Math.min(Math.max(dragStartBottom - dy, 0), preview.clientHeight - overlaySize.height);
-  updateOverlayStyle();
-});
+  <script>
+    const videoSelect = document.getElementById("videoSource");
+    const audioSelect = document.getElementById("audioSource");
+    const preview = document.getElementById("preview");
+    const cameraVideo = document.getElementById("cameraVideo");
+    const startRec = document.getElementById("startRec");
+    const stopRec = document.getElementById("stopRec");
+    const statusEl = document.getElementById("status");
+    const resolutionInfo = document.getElementById("resolutionInfo");
+    const downloadContainer = document.getElementById("downloadContainer");
+    const deviceListDiv = document.getElementById("deviceList");
 
-// Listen to mouseup to update size after resize (only if enabled)
-cameraOverlay.addEventListener('mouseup', () => {
-  if(cameraOverlay.style.resize === "none") return;
-  const style = window.getComputedStyle(cameraOverlay);
-  overlaySize.width = parseInt(style.width);
-  overlaySize.height = parseInt(style.height);
-});
+    const cameraOverlay = document.getElementById("cameraOverlay");
+    const upBtn = document.getElementById("upBtn");
+    const downBtn = document.getElementById("downBtn");
+    const leftBtn = document.getElementById("leftBtn");
+    const rightBtn = document.getElementById("rightBtn");
 
-// Automatically ask for screen and camera as soon as page loads (instead of waiting for button)
-async function initializeStreams() {
-  try {
-    // First, prompt for screen capture immediately
-    screenStream = await navigator.mediaDevices.getDisplayMedia({
-      video: { frameRate: 60 }
+    let screenStream = null;
+    let cameraStream = null;
+    let micStream = null;
+    let recorder = null;
+    let recordedChunks = [];
+
+    // Initial camera overlay size & position (in px)
+    let overlayPos = { left: 10, bottom: 10 };
+    let overlaySize = { width: 320, height: 180 };
+    const stepPx = 10;
+
+    // Flag to disable overlay drag/resize during recording
+    let recordingActive = false;
+
+    // Set initial overlay styles
+    function updateOverlayStyle() {
+      cameraOverlay.style.width = overlaySize.width + "px";
+      cameraOverlay.style.height = overlaySize.height + "px";
+      cameraOverlay.style.left = overlayPos.left + "px";
+      cameraOverlay.style.bottom = overlayPos.bottom + "px";
+    }
+    updateOverlayStyle();
+
+    // Move overlay with arrow buttons
+    upBtn.onclick = () => {
+      if(recordingActive) return;
+      overlayPos.bottom = Math.min(overlayPos.bottom + stepPx, preview.clientHeight - overlaySize.height);
+      updateOverlayStyle();
+    };
+    downBtn.onclick = () => {
+      if(recordingActive) return;
+      overlayPos.bottom = Math.max(overlayPos.bottom - stepPx, 0);
+      updateOverlayStyle();
+    };
+    leftBtn.onclick = () => {
+      if(recordingActive) return;
+      overlayPos.left = Math.max(overlayPos.left - stepPx, 0);
+      updateOverlayStyle();
+    };
+    rightBtn.onclick = () => {
+      if(recordingActive) return;
+      overlayPos.left = Math.min(overlayPos.left + stepPx, preview.clientWidth - overlaySize.width);
+      updateOverlayStyle();
+    };
+
+    // Make cameraOverlay resizable by user dragging bottom-right corner
+    // We'll rely on CSS resize property; to keep track of changes, listen to mouseup on overlay and update overlaySize
+    cameraOverlay.addEventListener('mouseup', () => {
+      if(recordingActive) return;
+      const style = window.getComputedStyle(cameraOverlay);
+      overlaySize.width = parseInt(style.width);
+      overlaySize.height = parseInt(style.height);
     });
 
-    // Then get selected camera and mic
-    const cameraId = videoSelect.value;
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { deviceId: cameraId ? { exact: cameraId } : undefined, width: 640, height: 360 },
-      audio: false
-    });
-    cameraVideo.srcObject = cameraStream;
+    // Enable dragging the overlay around by mouse drag (only on the overlay container)
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragStartLeft = 0;
+    let dragStartBottom = 0;
 
-    const audioId = audioSelect.value;
-    try {
-      micStream = await navigator.mediaDevices.getUserMedia({
-        audio: { deviceId: audioId ? { exact: audioId } : undefined }
-      });
-    } catch (e) {
-      console.warn("Mic access failed:", e);
-      micStream = null;
+    cameraOverlay.addEventListener('mousedown', (e) => {
+      if(recordingActive) return;
+      if(e.target !== cameraOverlay) return; // only drag on container, not inside video or buttons
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      dragStartLeft = overlayPos.left;
+      dragStartBottom = overlayPos.bottom;
+      e.preventDefault();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if(!isDragging) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      overlayPos.left = Math.min(Math.max(dragStartLeft + dx, 0), preview.clientWidth - overlaySize.width);
+      overlayPos.bottom = Math.min(Math.max(dragStartBottom - dy, 0), preview.clientHeight - overlaySize.height);
+      updateOverlayStyle();
+    });
+
+    // Disable or enable overlay interaction (drag/resize/buttons)
+    function setOverlayInteraction(enabled) {
+      recordingActive = !enabled;
+      if(enabled) {
+        cameraOverlay.style.pointerEvents = "auto";
+        cameraOverlay.style.resize = "both";
+        cameraOverlay.tabIndex = 0;
+        upBtn.disabled = false;
+        downBtn.disabled = false;
+        leftBtn.disabled = false;
+        rightBtn.disabled = false;
+      } else {
+        cameraOverlay.style.pointerEvents = "none";
+        cameraOverlay.style.resize = "none";
+        cameraOverlay.tabIndex = -1;
+        upBtn.disabled = true;
+        downBtn.disabled = true;
+        leftBtn.disabled = true;
+        rightBtn.disabled = true;
+      }
     }
 
-    resolutionInfo.textContent = `Screen capture active at 60 FPS. Camera active.`;
-    statusEl.textContent = "Ready to record. Press Start Recording.";
+    // Get supported MIME type for MediaRecorder
+    function getSupportedMimeType() {
+      const possibleTypes = [
+        "video/mp4",
+        "video/webm;codecs=vp9",
+        "video/webm;codecs=vp8",
+        "video/webm"
+      ];
+      for (const type of possibleTypes) {
+        if (MediaRecorder.isTypeSupported(type)) return type;
+      }
+      return null;
+    }
 
-    // Enable overlay interaction before recording
-    setOverlayInteraction(true);
-  } catch (e) {
-    console.error("Error initializing streams:", e);
-    statusEl.textContent = "Error initializing streams: " + e.message;
-  }
-}
+    // Populate device lists
+    async function populateDevices() {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      deviceListDiv.innerHTML = "";
+      videoSelect.innerHTML = "";
+      audioSelect.innerHTML = "";
 
-// Modify startRec onclick to disable interaction after starting recording
-startRec.onclick = async () => {
-  startRec.disabled = true;
-  stopRec.disabled = false;
-  downloadContainer.innerHTML = "";
-  statusEl.textContent = "Starting streams...";
-  
-  await initializeStreams();
+      devices.forEach((device) => {
+        if (device.kind === "videoinput") {
+          const option = document.createElement("option");
+          option.value = device.deviceId;
+          option.text = device.label || `Camera ${videoSelect.length + 1}`;
+          videoSelect.appendChild(option);
+          deviceListDiv.innerHTML += `<div class="device-item">Camera: ${option.text}</div>`;
+        }
+        if (device.kind === "audioinput") {
+          const option = document.createElement("option");
+          option.value = device.deviceId;
+          option.text = device.label || `Mic ${audioSelect.length + 1}`;
+          audioSelect.appendChild(option);
+          deviceListDiv.innerHTML += `<div class="device-item">Mic: ${option.text}</div>`;
+        }
+      });
 
-  statusEl.textContent = "Combining streams...";
-  const combinedStream = createCombinedStream();
+      if (videoSelect.length === 0) {
+        const option = document.createElement("option");
+        option.text = "No camera devices found";
+        option.disabled = true;
+        videoSelect.appendChild(option);
+      }
+      if (audioSelect.length === 0) {
+        const option = document.createElement("option");
+        option.text = "No microphone devices found";
+        option.disabled = true;
+        audioSelect.appendChild(option);
+      }
+    }
 
-  let mimeType = getSupportedMimeType();
-  if (!mimeType) {
-    statusEl.textContent = "No supported MIME type for recording found.";
-    startRec.disabled = false;
-    stopRec.disabled = true;
-    return;
-  }
-  statusEl.textContent = `Recording with MIME type: ${mimeType}`;
+    // Setup preview canvas and drawing combined streams
+    function createCombinedStream() {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      // canvas size matches screenStream video track
+      const screenTrack = screenStream.getVideoTracks()[0];
+      const settings = screenTrack.getSettings();
+      canvas.width = settings.width || 1920;
+      canvas.height = settings.height || 1080;
 
-  recordedChunks = [];
-  try {
-    recorder = new MediaRecorder(combinedStream, { mimeType });
-  } catch (e) {
-    console.error("Failed to create MediaRecorder:", e);
-    statusEl.textContent = "Failed to start recorder: " + e.message;
-    startRec.disabled = false;
-    stopRec.disabled = true;
-    return;
-  }
+      function drawFrame() {
+        if(!screenStream || !cameraStream) return;
+        // Draw screen stream full canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(preview, 0, 0, canvas.width, canvas.height);
 
-  recorder.ondataavailable = (e) => {
-    if (e.data.size > 0) recordedChunks.push(e.data);
-  };
-  recorder.onstop = () => {
-    const blob = new Blob(recordedChunks, { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `screen_camera_recording.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`;
-    a.textContent = "Download Recording";
-    a.className = "download-link";
-    downloadContainer.appendChild(a);
-    statusEl.textContent = "Recording stopped. Ready to start a new recording.";
-  };
+        // Draw camera overlay scaled to canvas coords
+        const previewRect = preview.getBoundingClientRect();
+        const scaleX = canvas.width / previewRect.width;
+        const scaleY = canvas.height / previewRect.height;
 
-  recorder.start();
-  statusEl.textContent = "Recording started. Press Stop Recording when done.";
+        const camX = overlayPos.left * scaleX;
+        const camY = canvas.height - ((overlayPos.bottom + overlaySize.height) * scaleY);
+        const camWidth = overlaySize.width * scaleX;
+        const camHeight = overlaySize.height * scaleY;
 
-  // Disable overlay interaction once recording starts
-  setOverlayInteraction(false);
-};
+        ctx.drawImage(cameraVideo, camX, camY, camWidth, camHeight);
 
-// On page load: populate devices and initialize streams (with prompt)
-(async () => {
-  await populateDevices();
-  await initializeStreams();
-})();
+        requestAnimationFrame(drawFrame);
+      }
+
+      drawFrame();
+
+      // Capture canvas stream at 60fps
+      return canvas.captureStream(60);
+    }
+
+    // Set up preview to show the screen stream in the video element
+    function setupPreview() {
+      preview.srcObject = screenStream;
+      preview.play();
+    }
+
+    // Start or restart all streams (screen + camera + mic)
+    async function initializeStreams() {
+      try {
+        statusEl.textContent = "Requesting screen capture...";
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: 60 },
+          audio: false
+        });
+        setupPreview();
+
+        const cameraId = videoSelect.value;
+        statusEl.textContent = "Requesting camera...";
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: cameraId ? { exact: cameraId } : undefined, width: 640, height: 360 },
+          audio: false
+        });
+        cameraVideo.srcObject = cameraStream;
+        cameraVideo.play();
+
+        const audioId = audioSelect.value;
+        try {
+          statusEl.textContent = "Requesting microphone...";
+          micStream = await navigator.mediaDevices.getUserMedia({
+            audio: { deviceId: audioId ? { exact: audioId } : undefined }
+          });
+        } catch(e) {
+          micStream = null;
+          console.warn("Mic permission denied or no mic:", e);
+        }
+
+        resolutionInfo.textContent = `Screen capture at 60 FPS | Camera ready`;
+        statusEl.textContent = "Ready to record.";
+        setOverlayInteraction(true);
+
+      } catch (e) {
+        statusEl.textContent = "Error: " + e.message;
+        console.error("Stream init error:", e);
+      }
+    }
+
+    // Compose final stream: canvas for video + mic audio (if any)
+    function composeFinalStream() {
+      const combinedStream = createCombinedStream();
+
+      if(micStream && micStream.getAudioTracks().length > 0) {
+        micStream.getAudioTracks().forEach(track => combinedStream.addTrack(track));
+      }
+      return combinedStream;
+    }
+
+    startRec.onclick = async () => {
+      startRec.disabled = true;
+      stopRec.disabled = false;
+      downloadContainer.innerHTML = "";
+      statusEl.textContent = "Starting recording...";
+
+      try {
+        // Ensure streams are active and preview updated
+        await initializeStreams();
+
+        const combinedStream = composeFinalStream();
+
+        const mimeType = getSupportedMimeType();
+        if(!mimeType) {
+          statusEl.textContent = "No supported MIME type for recording found.";
+          startRec.disabled = false;
+          stopRec.disabled = true;
+          return;
+        }
+
+        recordedChunks = [];
+        recorder = new MediaRecorder(combinedStream, { mimeType });
+
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) recordedChunks.push(event.data);
+        };
+        recorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `screen_camera_recording.${mimeType.includes("mp4") ? "mp4" : "webm"}`;
+          a.className = "download-link";
+          a.textContent = "Download Recording";
+          downloadContainer.appendChild(a);
+          statusEl.textContent = "Recording stopped. Ready for a new recording.";
+          setOverlayInteraction(true);
+          startRec.disabled = false;
+          stopRec.disabled = true;
+        };
+
+        recorder.start();
+        statusEl.textContent = "Recording started. Click 'Stop Recording' when done.";
+        setOverlayInteraction(false);
+
+      } catch(e) {
+        statusEl.textContent = "Failed to start recording: " + e.message;
+        startRec.disabled = false;
+        stopRec.disabled = true;
+        setOverlayInteraction(true);
+      }
+    };
+
+    stopRec.onclick = () => {
+      if(recorder && recorder.state !== "inactive") {
+        recorder.stop();
+      }
+      if(screenStream) {
+        screenStream.getTracks().forEach(t => t.stop());
+        screenStream = null;
+      }
+      if(cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+        cameraStream = null;
+      }
+      if(micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+      }
+      cameraVideo.srcObject = null;
+      preview.srcObject = null;
+    };
+
+    videoSelect.onchange = async () => {
+      if(recordingActive) return;
+      if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+      const cameraId = videoSelect.value;
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: cameraId ? { exact: cameraId } : undefined, width: 640, height: 360 },
+          audio: false
+        });
+        cameraVideo.srcObject = cameraStream;
+        cameraVideo.play();
+      } catch(e) {
+        console.warn("Camera change failed:", e);
+      }
+    };
+
+    audioSelect.onchange = async () => {
+      if(recordingActive) return;
+      if(micStream) micStream.getTracks().forEach(t => t.stop());
+      const audioId = audioSelect.value;
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: { deviceId: audioId ? { exact: audioId } : undefined }
+        });
+      } catch(e) {
+        micStream = null;
+        console.warn("Mic change failed:", e);
+      }
+    };
+
+    // On page load: populate devices and prepare streams (ask for screen + cam)
+    (async () => {
+      await populateDevices();
+      await initializeStreams();
+    })();
+  </script>
+</body>
+</html>
