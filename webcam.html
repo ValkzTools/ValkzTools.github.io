@@ -297,20 +297,19 @@
 
     cameraOverlay.addEventListener('pointerdown', (e) => {
       if(recordingActive) return;
-      // Check if pointer is near bottom-right corner to start resizing
+
       const rect = cameraOverlay.getBoundingClientRect();
       const offsetX = e.clientX - rect.left;
       const offsetY = e.clientY - rect.top;
       const resizeAreaSize = 20; // px
 
+      // Check if pointer is near bottom-right corner to start resizing
       if (
         offsetX > rect.width - resizeAreaSize &&
         offsetY > rect.height - resizeAreaSize
       ) {
-        // User started resizing
         isResizing = true;
       } else {
-        // Start dragging
         isDragging = true;
         dragStartX = e.clientX;
         dragStartY = e.clientY;
@@ -323,6 +322,7 @@
 
     window.addEventListener('pointermove', (e) => {
       if(recordingActive) return;
+
       if(isDragging) {
         const dx = e.clientX - dragStartX;
         const dy = e.clientY - dragStartY;
@@ -334,215 +334,5 @@
         overlayPos.left = newLeft;
         overlayPos.bottom = newBottom;
         updateOverlayStyle();
-      }
-    });
-
-    window.addEventListener('pointerup', (e) => {
-      if(recordingActive) return;
-      if(isDragging) {
-        isDragging = false;
-      }
-      if(isResizing) {
-        // On resize end, update overlaySize from computed style
-        const style = window.getComputedStyle(cameraOverlay);
-        overlaySize.width = parseInt(style.width);
-        overlaySize.height = parseInt(style.height);
-        isResizing = false;
-      }
-    });
-
-    // Populate device selectors
-    async function getDevices() {
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        videoSelect.innerHTML = '';
-        audioSelect.innerHTML = '';
-        deviceListDiv.innerHTML = '';
-        devices.forEach(d => {
-          let option = document.createElement('option');
-          option.value = d.deviceId;
-          option.text = d.label || (d.kind === 'videoinput' ? 'Camera ' : d.kind === 'audioinput' ? 'Mic ' : d.kind);
-          if(d.kind === 'videoinput') videoSelect.appendChild(option);
-          else if(d.kind === 'audioinput') audioSelect.appendChild(option);
-
-          // Device list display
-          let div = document.createElement('div');
-          div.className = 'device-item';
-          div.textContent = `[${d.kind}] ${d.label || d.deviceId}`;
-          deviceListDiv.appendChild(div);
-        });
-        statusEl.textContent = "Devices loaded.";
-      } catch (err) {
-        statusEl.textContent = "Error loading devices: " + err.message;
-      }
-    }
-
-    // Start camera preview
-    async function startCameraPreview() {
-      if(cameraStream) {
-        cameraStream.getTracks().forEach(t => t.stop());
-        cameraStream = null;
-      }
-      const videoSource = videoSelect.value;
-      if(!videoSource) return;
-
-      try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: videoSource ? { exact: videoSource } : undefined }
-        });
-        cameraVideo.srcObject = cameraStream;
-        cameraVideo.play();
-      } catch (err) {
-        statusEl.textContent = "Camera error: " + err.message;
-      }
-    }
-
-    videoSelect.onchange = startCameraPreview;
-
-    // Start screen capture (always included)
-    async function startScreenCapture() {
-      try {
-        if(screenStream) {
-          screenStream.getTracks().forEach(t => t.stop());
-          screenStream = null;
-        }
-        screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: { frameRate: 60 },
-          audio: false
-        });
-        preview.srcObject = screenStream;
-        preview.play();
-      } catch (err) {
-        statusEl.textContent = "Screen capture error: " + err.message;
-      }
-    }
-
-    // Start recording everything combined
-    startRec.onclick = async () => {
-      if(recordingActive) return;
-      startRec.disabled = true;
-      stopRec.disabled = false;
-      statusEl.textContent = "Starting recording...";
-
-      try {
-        // Start streams
-        await startScreenCapture();
-        await startCameraPreview();
-
-        // Get selected mic
-        const audioSource = audioSelect.value;
-        if(audioSource) {
-          micStream = await navigator.mediaDevices.getUserMedia({
-            audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
-            video: false
-          });
-        } else {
-          micStream = null;
-        }
-
-        // Compose final stream (screen + camera overlay + audio)
-        // Create canvas to composite
-        const canvas = document.createElement('canvas');
-        canvas.width = preview.videoWidth || 1280;
-        canvas.height = preview.videoHeight || 720;
-        const ctx = canvas.getContext('2d');
-
-        // Use captureStream from canvas
-        const composedStream = canvas.captureStream(60);
-
-        // Add audio tracks to composedStream
-        if(micStream) {
-          micStream.getAudioTracks().forEach(t => composedStream.addTrack(t));
-        }
-
-        // Use a timer to draw video frames to canvas
-        function drawFrame() {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          if(preview.readyState >= 2) {
-            ctx.drawImage(preview, 0, 0, canvas.width, canvas.height);
-          }
-          if(cameraVideo.readyState >= 2) {
-            // Calculate overlay position relative to canvas size
-            // cameraOverlay position is relative to preview container size (width, height)
-            const previewRect = preview.getBoundingClientRect();
-            const overlayRect = cameraOverlay.getBoundingClientRect();
-
-            // Scale position from DOM pixels to canvas pixels
-            const scaleX = canvas.width / previewRect.width;
-            const scaleY = canvas.height / previewRect.height;
-
-            const overlayX = (overlayRect.left - previewRect.left) * scaleX;
-            const overlayY = (overlayRect.top - previewRect.top) * scaleY;
-            const overlayW = overlayRect.width * scaleX;
-            const overlayH = overlayRect.height * scaleY;
-
-            ctx.drawImage(cameraVideo, overlayX, overlayY, overlayW, overlayH);
-          }
-          if(recordingActive) {
-            requestAnimationFrame(drawFrame);
-          }
-        }
-
-        recordingActive = true;
-        drawFrame();
-
-        recordedChunks = [];
-        recorder = new MediaRecorder(composedStream, { mimeType: 'video/webm; codecs=vp9' });
-
-        recorder.ondataavailable = e => {
-          if(e.data.size > 0) recordedChunks.push(e.data);
-        };
-        recorder.onstop = () => {
-          recordingActive = false;
-          startRec.disabled = false;
-          stopRec.disabled = true;
-          statusEl.textContent = "Recording stopped.";
-
-          const blob = new Blob(recordedChunks, { type: 'video/webm' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'recording.webm';
-          a.className = "download-link";
-          a.textContent = 'Download Recording';
-          downloadContainer.innerHTML = '';
-          downloadContainer.appendChild(a);
-        };
-
-        recorder.start();
-        statusEl.textContent = "Recording started.";
-      } catch (err) {
-        statusEl.textContent = "Recording error: " + err.message;
-        startRec.disabled = false;
-        stopRec.disabled = true;
-      }
-    };
-
-    stopRec.onclick = () => {
-      if(recorder && recordingActive) {
-        recorder.stop();
-        // Stop all streams
-        if(screenStream) screenStream.getTracks().forEach(t => t.stop());
-        if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
-        if(micStream) micStream.getTracks().forEach(t => t.stop());
-      }
-    };
-
-    // Initialize device list and start preview
-    async function init() {
-      await getDevices();
-      if(videoSelect.options.length > 0) {
-        videoSelect.selectedIndex = 0;
-      }
-      if(audioSelect.options.length > 0) {
-        audioSelect.selectedIndex = 0;
-      }
-      await startCameraPreview();
-      statusEl.textContent = "Ready.";
-    }
-
-    init();
-
-  </script>
-</body>
-</html>
+      } else if(isResizing) {
+       
