@@ -182,14 +182,14 @@
           <select id="audioSource"></select>
         </div>
         <div>
-          <label><input type="checkbox" id="includeDesktop" checked disabled /> Screen capture is always included (with desktop audio)</label>
+          <label><input type="checkbox" id="includeDesktop" checked disabled /> Screen capture is always included</label>
         </div>
         <div class="controls" style="margin-top:10px;">
           <button id="startRec">Start Recording</button>
           <button id="stopRec" disabled>Stop Recording</button>
         </div>
         <div class="status" id="status">Idle. Loading devices...</div>
-        <div class="note">The recording will include your screen (with desktop sound) and camera overlay at 60fps, saved as WebM if supported.</div>
+        <div class="note">The recording will include your screen and camera overlay at 60fps, saved as WebM if supported.</div>
         <div>
           <strong>Detected devices:</strong>
           <div class="device-list" id="deviceList">— none yet —</div>
@@ -233,6 +233,7 @@
     let screenStream = null;
     let cameraStream = null;
     let micStream = null;
+    let systemAudioStream = null;
     let recorder = null;
     let recordedChunks = [];
 
@@ -331,4 +332,302 @@
         let newLeft = dragStartLeft + dx;
         let newBottom = dragStartBottom - dy;
         newLeft = Math.min(Math.max(newLeft, 0), preview.clientWidth - overlaySize.width);
-        newBottom = Math.min(Math.max(newBottom, 0), preview
+        newBottom = Math.min(Math.max(newBottom, 0), preview.clientHeight - overlaySize.height);
+        overlayPos.left = newLeft;
+        overlayPos.bottom = newBottom;
+        updateOverlayStyle();
+      }
+      if(isResizing) {
+        // Let ResizeObserver handle resize via CSS resize property
+      }
+    });
+
+    window.addEventListener('pointerup', (e) => {
+      if(isDragging || isResizing) {
+        isDragging = false;
+        isResizing = false;
+        cameraOverlay.style.cursor = 'move';
+      }
+    });
+
+    // List devices and fill select inputs
+    async function listDevices() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter(d => d.kind === 'videoinput');
+        const audioInputs = devices.filter(d => d.kind === 'audioinput');
+
+        deviceListDiv.innerHTML = devices.map(d => `<div class="device-item">${d.kind} — ${d.label || 'Unnamed'}</div>`).join("");
+
+        videoSelect.innerHTML = "";
+        audioSelect.innerHTML = "";
+
+        videoInputs.forEach(device => {
+          const option = document.createElement("option");
+          option.value = device.deviceId;
+          option.text = device.label || `Camera ${videoSelect.length + 1}`;
+          videoSelect.appendChild(option);
+        });
+        audioInputs.forEach(device => {
+          const option = document.createElement("option");
+          option.value = device.deviceId;
+          option.text = device.label || `Microphone ${audioSelect.length + 1}`;
+          audioSelect.appendChild(option);
+        });
+      } catch(err) {
+        statusEl.textContent = "Error listing devices: " + err.message;
+      }
+    }
+
+    // On device change, restart camera preview
+    async function startCameraPreview() {
+      if(cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+      }
+      const videoDeviceId = videoSelect.value;
+      if(!videoDeviceId) {
+        cameraVideo.srcObject = null;
+        return;
+      }
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: videoDeviceId ? { exact: videoDeviceId } : undefined },
+          audio: false
+        });
+        cameraVideo.srcObject = cameraStream;
+      } catch(err) {
+        statusEl.textContent = "Error starting camera: " + err.message;
+      }
+    }
+
+    videoSelect.onchange = startCameraPreview;
+
+    // Get mic stream based on selection
+    async function getMicStream() {
+      if(audioSelect.value) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { deviceId: { exact: audioSelect.value } },
+            video: false
+          });
+          return stream;
+        } catch (err) {
+          statusEl.textContent = "Error accessing microphone: " + err.message;
+          return null;
+        }
+      }
+      return null;
+    }
+
+    // Get screen + system audio stream
+    async function getScreenStream() {
+      try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: 60 },
+          audio: true // system audio if available
+        });
+        return screenStream;
+      } catch(err) {
+        statusEl.textContent = "Error accessing screen: " + err.message;
+        return null;
+      }
+    }
+
+    // Merge audio tracks from mic and screen/system audio if possible
+    function mergeAudioStreams(screenStream, micStream) {
+      if(!screenStream && !micStream) return null;
+
+      const context = new AudioContext();
+      const destination = context.createMediaStreamDestination();
+
+      let hasAudio = false;
+
+      if(screenStream && screenStream.getAudioTracks().length > 0) {
+        const source1 = context.createMediaStreamSource(screenStream);
+        source1.connect(destination);
+        hasAudio = true;
+      }
+      if(micStream && micStream.getAudioTracks().length > 0) {
+        const source2 = context.createMediaStreamSource(micStream);
+        source2.connect(destination);
+        hasAudio = true;
+      }
+      return hasAudio ? destination.stream : null;
+    }
+
+    // Main start recording function
+    startRec.onclick = async () => {
+      startRec.disabled = true;
+      stopRec.disabled = false;
+      statusEl.textContent = "Starting recording...";
+
+      // 1) Get streams
+      screenStream = await getScreenStream();
+      if(!screenStream) {
+        startRec.disabled = false;
+        stopRec.disabled = true;
+        statusEl.textContent = "Screen capture failed.";
+        return;
+      }
+
+      micStream = await getMicStream();
+
+      await startCameraPreview();
+      if(!cameraStream) {
+        startRec.disabled = false;
+        stopRec.disabled = true;
+        statusEl.textContent = "Camera capture failed.";
+        return;
+      }
+
+      // 2) Compose canvas
+      const screenTrack = screenStream.getVideoTracks()[0];
+      const screenSettings = screenTrack.getSettings();
+      const screenWidth = screenSettings.width || 1280;
+      const screenHeight = screenSettings.height || 720;
+
+      resolutionInfo.textContent = `Screen resolution: ${screenWidth}×${screenHeight}`;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = screenWidth;
+      canvas.height = screenHeight;
+
+      const ctx = canvas.getContext("2d");
+
+      // Draw camera overlay position relative to screen capture
+      // We must scale camera overlay coordinates (from preview video) to screen capture size
+
+      // The preview video size
+      const previewRect = preview.getBoundingClientRect();
+      // The camera overlay relative position & size on preview
+      const overlayRect = cameraOverlay.getBoundingClientRect();
+
+      // Calculate scale factors for width and height
+      const scaleX = screenWidth / preview.videoWidth;
+      const scaleY = screenHeight / preview.videoHeight;
+
+      // But preview.videoWidth/videoHeight may not be immediately available,
+      // so fallback to preview client size and assume same aspect ratio
+      const previewVideoWidth = preview.videoWidth || preview.clientWidth;
+      const previewVideoHeight = preview.videoHeight || preview.clientHeight;
+
+      // Use scaling factors
+      const camX = overlayPos.left * (screenWidth / preview.clientWidth);
+      const camY = screenHeight - overlayPos.bottom - overlaySize.height; // bottom to top coords
+      const camYscaled = camY * (screenHeight / preview.clientHeight);
+      const camWidthScaled = overlaySize.width * (screenWidth / preview.clientWidth);
+      const camHeightScaled = overlaySize.height * (screenHeight / preview.clientHeight);
+
+      // 3) Capture and composite frames
+      const videoTrackSettings = screenTrack.getSettings();
+
+      // Create video elements for compositing streams (offscreen)
+      const screenVideo = document.createElement("video");
+      screenVideo.srcObject = screenStream;
+      screenVideo.muted = true;
+      screenVideo.playsInline = true;
+      await screenVideo.play();
+
+      const camVideo = document.createElement("video");
+      camVideo.srcObject = cameraStream;
+      camVideo.muted = true;
+      camVideo.playsInline = true;
+      await camVideo.play();
+
+      // Compose function for frames
+      function drawFrame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(camVideo, camX, camYscaled, camWidthScaled, camHeightScaled);
+      }
+
+      // Capture composited canvas stream at 60fps
+      const combinedStream = canvas.captureStream(60);
+
+      // 4) Merge audio
+      const audioStream = mergeAudioStreams(screenStream, micStream);
+
+      if(audioStream && audioStream.getAudioTracks().length > 0) {
+        // Add audio tracks to combined stream
+        audioStream.getAudioTracks().forEach(track => {
+          combinedStream.addTrack(track);
+        });
+      }
+
+      // Show preview video output
+      preview.srcObject = combinedStream;
+
+      // 5) Start MediaRecorder
+      recordedChunks = [];
+      try {
+        recorder = new MediaRecorder(combinedStream, { mimeType: "video/webm; codecs=vp8,opus" });
+      } catch (e) {
+        statusEl.textContent = "MediaRecorder initialization failed: " + e.message;
+        startRec.disabled = false;
+        stopRec.disabled = true;
+        return;
+      }
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "recording_" + new Date().toISOString().replace(/[:.]/g, "-") + ".webm";
+        a.textContent = "Download Recording";
+        a.className = "download-link";
+        downloadContainer.innerHTML = "";
+        downloadContainer.appendChild(a);
+        statusEl.textContent = "Recording stopped. Ready to download.";
+        recordingActive = false;
+        startRec.disabled = false;
+        stopRec.disabled = true;
+      };
+
+      recorder.start(100);
+      recordingActive = true;
+
+      // Draw frames loop
+      function recordingLoop() {
+        if (!recordingActive) return;
+        drawFrame();
+        requestAnimationFrame(recordingLoop);
+      }
+      recordingLoop();
+
+      statusEl.textContent = "Recording...";
+    };
+
+    stopRec.onclick = () => {
+      if(recorder && recordingActive) {
+        recorder.stop();
+        recordingActive = false;
+      }
+      if(screenStream) screenStream.getTracks().forEach(t => t.stop());
+      if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+      if(micStream) micStream.getTracks().forEach(t => t.stop());
+      preview.srcObject = null;
+      cameraVideo.srcObject = null;
+      statusEl.textContent = "Processing recording...";
+      startRec.disabled = false;
+      stopRec.disabled = true;
+    };
+
+    // Start
+    async function init() {
+      await listDevices();
+
+      // Start preview for default selected devices
+      if(videoSelect.options.length > 0) {
+        videoSelect.selectedIndex = 0;
+        await startCameraPreview();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
