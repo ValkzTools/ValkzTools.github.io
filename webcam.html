@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Screen + Webcam Recorder with Overlay</title>
+  <title>Screen + Webcam Recorder</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {box-sizing: border-box; margin: 0; padding: 0;}
     body {
       min-height: 100vh;
       font-family: 'Orbitron', sans-serif;
@@ -16,7 +16,9 @@
     }
     .sidebar {
       position: fixed;
-      left: 0; top: 0; bottom: 0;
+      left: 0;
+      top: 0;
+      bottom: 0;
       width: 220px;
       background: rgba(0,0,0,0.15);
       backdrop-filter: blur(10px);
@@ -35,7 +37,7 @@
       border-radius: 8px;
       display: block;
       font-weight: 600;
-      transition: background 0.2s;
+      transition: background .2s;
     }
     .nav-link:hover { background: rgba(255,255,255,0.08); }
     .nav-link.active { background: rgba(255,255,255,0.15); }
@@ -44,7 +46,7 @@
       max-width: 1100px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 20px;
       padding: 10px;
     }
@@ -67,22 +69,62 @@
       outline: none;
       cursor: pointer;
     }
-    video {
-      background: #000;
-      display: none; /* Hide raw videos */
-    }
-    #canvasPreview {
+    #previewContainer {
+      position: relative;
       background: #000;
       border-radius: 12px;
+      overflow: hidden;
       width: 100%;
-      cursor: grab;
-      user-select: none;
-      touch-action: none;
+      max-height: 720px;
     }
-    .controls {
+    #preview {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    #cameraOverlay {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      width: 320px;
+      height: 180px;
+      border: 2px solid #fff;
+      border-radius: 10px;
+      background: black;
+      cursor: move;
+      resize: both;
+      overflow: hidden;
+      z-index: 15;
+      user-select: none;
       display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      align-items: center;
+    }
+    #cameraVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+      pointer-events: none; /* disable direct drag on video */
+    }
+    #cameraControls {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 4px;
+      user-select: none;
+    }
+    #cameraControls button {
+      background: rgba(255,255,255,0.15);
+      border-radius: 4px;
+      border: none;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      line-height: 1;
     }
     .status {
       margin-top: 8px;
@@ -114,45 +156,6 @@
     .device-item {
       margin-bottom: 4px;
     }
-    /* Resizable handle for camera overlay */
-    #cameraOverlay {
-      position: absolute;
-      border: 2px solid #ffe600;
-      border-radius: 8px;
-      touch-action: none;
-      box-sizing: border-box;
-      background: rgba(0,0,0,0.25);
-      cursor: move;
-      display: none;
-    }
-    #resizeHandle {
-      position: absolute;
-      width: 15px;
-      height: 15px;
-      background: #ffe600;
-      right: 0;
-      bottom: 0;
-      cursor: se-resize;
-      border-radius: 4px;
-      user-select: none;
-    }
-    #previewContainer {
-      position: relative;
-      width: 100%;
-      height: 0;
-      padding-bottom: 56.25%; /* 16:9 aspect ratio */
-      overflow: visible;
-    }
-    #canvasPreview {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-    }
-    #cameraOverlay video {
-      width: 100%;
-      height: 100%;
-      border-radius: 6px;
-      pointer-events: none; /* disable interaction inside video */
-    }
   </style>
 </head>
 <body>
@@ -166,7 +169,7 @@
   </div>
 
   <div style="padding-top:10px;">
-    <h1>Screen + Webcam Recorder with Overlay</h1>
+    <h1>Screen + Webcam Recorder</h1>
     <div class="panel">
       <div class="box">
         <div>
@@ -177,18 +180,15 @@
           <label for="audioSource">Microphone:</label>
           <select id="audioSource"></select>
         </div>
-        <div class="controls">
-          <button id="refreshDevices">Refresh Devices</button>
-          <button id="startPreview">Start Preview</button>
-          <button id="startScreen">Start Screen Capture</button>
+        <div>
+          <label><input type="checkbox" id="includeDesktop" checked disabled /> Screen capture is always included</label>
+        </div>
+        <div class="controls" style="margin-top:10px;">
           <button id="startRec">Start Recording</button>
           <button id="stopRec" disabled>Stop Recording</button>
         </div>
-        <div class="status" id="status">Idle. Request permissions to enumerate devices.</div>
-        <div class="note">Desktop audio may only work if you allow screen share with audio. Some platforms limit system audio capture.</div>
-        <div>
-          <label><input type="checkbox" id="includeDesktop" /> Include Desktop Audio (screen capture)</label>
-        </div>
+        <div class="status" id="status">Idle. Loading devices...</div>
+        <div class="note">The recording will include your screen and camera overlay at 60fps, saved as MP4 if supported.</div>
         <div>
           <strong>Detected devices:</strong>
           <div class="device-list" id="deviceList">— none yet —</div>
@@ -196,61 +196,113 @@
         <div id="downloadContainer"></div>
       </div>
       <div class="box" id="previewContainer">
-        <canvas id="canvasPreview" width="1280" height="720"></canvas>
-        <div id="cameraOverlay">
-          <video autoplay muted playsinline></video>
-          <div id="resizeHandle"></div>
+        <video id="preview" autoplay muted playsinline></video>
+        <div id="cameraOverlay" tabindex="0">
+          <video id="cameraVideo" autoplay muted playsinline></video>
+          <div id="cameraControls">
+            <button id="upBtn" title="Move Up">↑</button>
+            <button id="leftBtn" title="Move Left">←</button>
+            <button id="downBtn" title="Move Down">↓</button>
+            <button id="rightBtn" title="Move Right">→</button>
+          </div>
         </div>
-        <div class="status" id="resolutionInfo">Resolution & FPS info will appear here.</div>
+        <div class="status" id="resolutionInfo">Loading preview...</div>
       </div>
     </div>
   </div>
 
-  <!-- Hidden videos to capture streams -->
-  <video id="screenVideo" autoplay muted playsinline style="display:none"></video>
-  <video id="cameraVideo" autoplay muted playsinline style="display:none"></video>
-
   <script>
     const videoSelect = document.getElementById("videoSource");
     const audioSelect = document.getElementById("audioSource");
-    const startPreviewBtn = document.getElementById("startPreview");
-    const startScreenBtn = document.getElementById("startScreen");
-    const startRecBtn = document.getElementById("startRec");
-    const stopRecBtn = document.getElementById("stopRec");
+    const preview = document.getElementById("preview");
+    const cameraVideo = document.getElementById("cameraVideo");
+    const startRec = document.getElementById("startRec");
+    const stopRec = document.getElementById("stopRec");
     const statusEl = document.getElementById("status");
     const resolutionInfo = document.getElementById("resolutionInfo");
     const downloadContainer = document.getElementById("downloadContainer");
-    const includeDesktopCheckbox = document.getElementById("includeDesktop");
     const deviceListDiv = document.getElementById("deviceList");
-    const refreshBtn = document.getElementById("refreshDevices");
-
-    const screenVideo = document.getElementById("screenVideo");
-    const cameraVideo = document.getElementById("cameraVideo");
-
-    const canvas = document.getElementById("canvasPreview");
-    const ctx = canvas.getContext("2d");
 
     const cameraOverlay = document.getElementById("cameraOverlay");
-    const resizeHandle = document.getElementById("resizeHandle");
-    const previewContainer = document.getElementById("previewContainer");
+    const upBtn = document.getElementById("upBtn");
+    const downBtn = document.getElementById("downBtn");
+    const leftBtn = document.getElementById("leftBtn");
+    const rightBtn = document.getElementById("rightBtn");
 
-    let cameraStream = null;
     let screenStream = null;
+    let cameraStream = null;
     let micStream = null;
-    let desktopAudioStream = null;
-
     let recorder = null;
     let recordedChunks = [];
 
-    let isDragging = false;
-    let dragOffsetX = 0;
-    let dragOffsetY = 0;
-
-    // Initial position and size for overlay
-    let overlayPos = { x: 50, y: 50 };
+    // Initial camera overlay size & position (in px)
+    let overlayPos = { left: 10, bottom: 10 };
     let overlaySize = { width: 320, height: 180 };
+    const stepPx = 10;
 
-    // Permissions and device enumeration
+    // Set initial overlay styles
+    function updateOverlayStyle() {
+      cameraOverlay.style.width = overlaySize.width + "px";
+      cameraOverlay.style.height = overlaySize.height + "px";
+      cameraOverlay.style.left = overlayPos.left + "px";
+      cameraOverlay.style.bottom = overlayPos.bottom + "px";
+    }
+    updateOverlayStyle();
+
+    // Move overlay with arrow buttons
+    upBtn.onclick = () => {
+      overlayPos.bottom = Math.min(overlayPos.bottom + stepPx, preview.clientHeight - overlaySize.height);
+      updateOverlayStyle();
+    };
+    downBtn.onclick = () => {
+      overlayPos.bottom = Math.max(overlayPos.bottom - stepPx, 0);
+      updateOverlayStyle();
+    };
+    leftBtn.onclick = () => {
+      overlayPos.left = Math.max(overlayPos.left - stepPx, 0);
+      updateOverlayStyle();
+    };
+    rightBtn.onclick = () => {
+      overlayPos.left = Math.min(overlayPos.left + stepPx, preview.clientWidth - overlaySize.width);
+      updateOverlayStyle();
+    };
+
+    // Make cameraOverlay resizable by user dragging bottom-right corner
+    // We'll rely on CSS resize property; to keep track of changes, listen to mouseup on overlay and update overlaySize
+
+    cameraOverlay.addEventListener('mouseup', () => {
+      // read current size from computed styles
+      const style = window.getComputedStyle(cameraOverlay);
+      overlaySize.width = parseInt(style.width);
+      overlaySize.height = parseInt(style.height);
+    });
+
+    // Also enable dragging the overlay around by mouse drag (optional enhancement)
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragStartLeft = 0;
+    let dragStartBottom = 0;
+
+    cameraOverlay.addEventListener('mousedown', (e) => {
+      if(e.target !== cameraOverlay) return; // only drag if outer container
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      dragStartLeft = overlayPos.left;
+      dragStartBottom = overlayPos.bottom;
+      e.preventDefault();
+    });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mousemove', (e) => {
+      if(!isDragging) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      overlayPos.left = Math.min(Math.max(dragStartLeft + dx, 0), preview.clientWidth - overlaySize.width);
+      overlayPos.bottom = Math.min(Math.max(dragStartBottom - dy, 0), preview.clientHeight - overlaySize.height);
+      updateOverlayStyle();
+    });
+
     async function ensurePermissions() {
       try {
         await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
@@ -259,23 +311,23 @@
       }
     }
 
-    async function populateDevices() {
+    async function populateDevices(){
       await ensurePermissions();
       const devices = await navigator.mediaDevices.enumerateDevices();
       videoSelect.innerHTML = "";
       audioSelect.innerHTML = "";
       deviceListDiv.innerHTML = "";
-      if (devices.length === 0) {
+      if(devices.length === 0){
         deviceListDiv.textContent = "No media devices found.";
       }
-      devices.forEach((d) => {
+      devices.forEach((d)=>{
         const option = document.createElement("option");
         option.value = d.deviceId;
-        if (d.kind === "videoinput") {
-          option.text = d.label || `Camera ${videoSelect.length + 1}`;
+        if(d.kind === "videoinput"){
+          option.text = d.label || `Camera ${videoSelect.length+1}`;
           videoSelect.appendChild(option);
-        } else if (d.kind === "audioinput") {
-          option.text = d.label || `Mic ${audioSelect.length + 1}`;
+        } else if(d.kind === "audioinput"){
+          option.text = d.label || `Mic ${audioSelect.length+1}`;
           audioSelect.appendChild(option);
         }
         const div = document.createElement("div");
@@ -283,263 +335,218 @@
         div.textContent = `[${d.kind}] ${d.label || "Unnamed"} (id: ${d.deviceId})`;
         deviceListDiv.appendChild(div);
       });
-      if (!videoSelect.value && videoSelect.options.length) videoSelect.selectedIndex = 0;
-      if (!audioSelect.value && audioSelect.options.length) audioSelect.selectedIndex = 0;
+      if(!videoSelect.value && videoSelect.options.length) videoSelect.selectedIndex = 0;
+      if(!audioSelect.value && audioSelect.options.length) audioSelect.selectedIndex = 0;
     }
 
-    // Start camera preview inside overlay
-    async function startCameraPreview() {
-      if (cameraStream) {
-        cameraStream.getTracks().forEach(t => t.stop());
-      }
-      const videoId = videoSelect.value;
+    async function startStreams() {
       try {
+        // Start screen capture (always included)
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: 60 }
+        });
+
+        // Start camera stream
+        const cameraId = videoSelect.value;
         cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: videoId ? { exact: videoId } : undefined, width: 640, height: 360, frameRate: 60 },
+          video: { deviceId: cameraId ? { exact: cameraId } : undefined, width: 640, height: 360 },
           audio: false
         });
         cameraVideo.srcObject = cameraStream;
-        cameraOverlay.style.display = "block";
-        updateOverlayPosition();
-        statusEl.textContent = "Camera preview active.";
+
+        // Start mic stream if available
+        const audioId = audioSelect.value;
+        try {
+          micStream = await navigator.mediaDevices.getUserMedia({
+            audio: { deviceId: audioId ? { exact: audioId } : undefined }
+          });
+        } catch (e) {
+          console.warn("Mic access failed:", e);
+          micStream = null;
+        }
+
+        resolutionInfo.textContent = `Screen capture active at 60 FPS. Camera active.`;
+        statusEl.textContent = "Ready to record. Press Start Recording.";
       } catch (e) {
-        console.error("Camera preview error:", e);
-        statusEl.textContent = "Error starting camera preview: " + e.message;
+        console.error("Error starting streams:", e);
+        statusEl.textContent = "Error initializing streams: " + e.message;
       }
     }
 
-    // Start screen capture
-    async function startScreenCapture() {
-      if (screenStream) {
-        screenStream.getTracks().forEach(t => t.stop());
-      }
-      try {
-        screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: { frameRate: 60 },
-          audio: false // We'll get audio separately
-        });
-        screenVideo.srcObject = screenStream;
-        statusEl.textContent = "Screen capture active.";
-        const trackSettings = screenStream.getVideoTracks()[0].getSettings();
-        resolutionInfo.textContent = `Screen: ${trackSettings.width}x${trackSettings.height} @ ${trackSettings.frameRate}fps`;
-      } catch (e) {
-        console.error("Screen capture error:", e);
-        statusEl.textContent = "Error starting screen capture: " + e.message;
-      }
-    }
+    // Create the final combined stream with overlay drawn on canvas
+    function createCombinedStream() {
+      const screenVideoTrack = screenStream.getVideoTracks()[0];
+      const screenSettings = screenVideoTrack.getSettings();
 
-    // Drag and resize logic for overlay
-    cameraOverlay.style.left = overlayPos.x + "px";
-    cameraOverlay.style.top = overlayPos.y + "px";
-    cameraOverlay.style.width = overlaySize.width + "px";
-    cameraOverlay.style.height = overlaySize.height + "px";
+      const canvas = document.createElement('canvas');
+      canvas.width = screenSettings.width || 1920;
+      canvas.height = screenSettings.height || 1080;
+      const ctx = canvas.getContext('2d');
 
-    cameraOverlay.addEventListener("mousedown", (e) => {
-      if (e.target === resizeHandle) return; // handled by resize
-      isDragging = true;
-      dragOffsetX = e.clientX - cameraOverlay.offsetLeft;
-      dragOffsetY = e.clientY - cameraOverlay.offsetTop;
-      cameraOverlay.style.cursor = "grabbing";
-    });
-    window.addEventListener("mouseup", () => {
-      isDragging = false;
-      cameraOverlay.style.cursor = "grab";
-    });
-    window.addEventListener("mousemove", (e) => {
-      if (isDragging) {
-        let newX = e.clientX - dragOffsetX;
-        let newY = e.clientY - dragOffsetY;
-        // constrain inside preview container
-        const rect = previewContainer.getBoundingClientRect();
-        newX = Math.max(0, Math.min(rect.width - overlaySize.width, newX));
-        newY = Math.max(0, Math.min(rect.height - overlaySize.height, newY));
-        overlayPos.x = newX;
-        overlayPos.y = newY;
-        updateOverlayPosition();
-      }
-    });
+      const cameraVideoEl = cameraVideo;
 
-    // Resize logic
-    let isResizing = false;
-    let resizeStart = { x: 0, y: 0 };
-    resizeHandle.addEventListener("mousedown", (e) => {
-      e.stopPropagation();
-      isResizing = true;
-      resizeStart.x = e.clientX;
-      resizeStart.y = e.clientY;
-    });
-    window.addEventListener("mouseup", () => {
-      isResizing = false;
-    });
-    window.addEventListener("mousemove", (e) => {
-      if (isResizing) {
-        const dx = e.clientX - resizeStart.x;
-        const dy = e.clientY - resizeStart.y;
-        resizeStart.x = e.clientX;
-        resizeStart.y = e.clientY;
-        overlaySize.width = Math.max(100, overlaySize.width + dx);
-        overlaySize.height = Math.max(56, overlaySize.height + dy);
-        // constrain inside preview container
-        const rect = previewContainer.getBoundingClientRect();
-        overlaySize.width = Math.min(overlaySize.width, rect.width - overlayPos.x);
-        overlaySize.height = Math.min(overlaySize.height, rect.height - overlayPos.y);
-        updateOverlayPosition();
-      }
-    });
+      // We'll draw screen video and camera overlay on canvas at 60 fps
+      // Create a hidden video element to play screenStream (to draw on canvas)
+      const screenVideo = document.createElement('video');
+      screenVideo.srcObject = screenStream;
+      screenVideo.play();
 
-    function updateOverlayPosition() {
-      cameraOverlay.style.left = overlayPos.x + "px";
-      cameraOverlay.style.top = overlayPos.y + "px";
-      cameraOverlay.style.width = overlaySize.width + "px";
-      cameraOverlay.style.height = overlaySize.height + "px";
-    }
+      // Animate drawing
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Draw screen
+        ctx.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
 
-    // Compose streams and record
-    async function startRecording() {
-      if (!screenStream) {
-        alert("Please start screen capture first.");
-        return;
-      }
-      if (!cameraStream) {
-        alert("Please start camera preview first.");
-        return;
-      }
-      if (recorder) {
-        alert("Recording already in progress.");
-        return;
-      }
+        // Calculate overlay position relative to canvas
+        // Overlay position is relative to preview video size, so scale to canvas size
+        const previewRect = preview.getBoundingClientRect();
+        const previewWidth = preview.clientWidth;
+        const previewHeight = preview.clientHeight;
 
-      // Compose audio tracks
-      const audioTracks = [];
+        // Calculate scale factors to convert overlay pos from preview coords to canvas coords
+        const scaleX = canvas.width / previewWidth;
+        const scaleY = canvas.height / previewHeight;
+
+        const overlayX = overlayPos.left * scaleX;
+        const overlayY = canvas.height - ((overlayPos.bottom + overlaySize.height) * scaleY);
+        const overlayW = overlaySize.width * scaleX;
+        const overlayH = overlaySize.height * scaleY;
+
+        // Draw camera overlay
+        ctx.drawImage(cameraVideoEl, overlayX, overlayY, overlayW, overlayH);
+
+        requestAnimationFrame(draw);
+      }
+      draw();
+
+      // Capture canvas stream at 60fps
+      const combinedStream = canvas.captureStream(60);
+
+      // Audio mixing
       const audioContext = new AudioContext();
       const destination = audioContext.createMediaStreamDestination();
 
-      // Add mic audio
-      try {
-        const micId = audioSelect.value;
-        if (micId) {
-          micStream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: micId } }, video: false });
-          const micSource = audioContext.createMediaStreamSource(micStream);
-          micSource.connect(destination);
-          audioTracks.push(...micStream.getAudioTracks());
-        }
-      } catch (e) {
-        console.warn("Mic audio error or denied:", e);
+      if (micStream) {
+        const micSource = audioContext.createMediaStreamSource(micStream);
+        micSource.connect(destination);
+      }
+      if (screenStream.getAudioTracks().length > 0) {
+        const screenAudioSource = audioContext.createMediaStreamSource(screenStream);
+        screenAudioSource.connect(destination);
       }
 
-      // Add desktop audio if enabled
-      if (includeDesktopCheckbox.checked) {
-        if (screenStream.getAudioTracks().length > 0) {
-          const desktopAudioTrack = screenStream.getAudioTracks()[0];
-          audioTracks.push(desktopAudioTrack);
-          // To merge audio tracks, create a stream and connect to destination
-          const desktopAudioStream = new MediaStream([desktopAudioTrack]);
-          const desktopSource = audioContext.createMediaStreamSource(desktopAudioStream);
-          desktopSource.connect(destination);
-        } else {
-          statusEl.textContent = "No desktop audio available from screen capture.";
-        }
-      }
-
-      // Get the canvas stream at 60fps
-      const combinedStream = canvas.captureStream(60);
-
-      // Add audio tracks to combined stream
-      destination.stream.getAudioTracks().forEach(t => {
-        combinedStream.addTrack(t);
+      // Add mixed audio tracks to combined stream
+      destination.stream.getAudioTracks().forEach(track => {
+        combinedStream.addTrack(track);
       });
 
+      return combinedStream;
+    }
+
+    function getSupportedMimeType() {
+      if (MediaRecorder.isTypeSupported('video/mp4;codecs=h264')) return 'video/mp4;codecs=h264';
+      if (MediaRecorder.isTypeSupported('video/mp4')) return 'video/mp4';
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) return 'video/webm;codecs=vp9';
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) return 'video/webm;codecs=vp8';
+      if (MediaRecorder.isTypeSupported('video/webm')) return 'video/webm';
+      return '';
+    }
+
+    startRec.onclick = async () => {
+      startRec.disabled = true;
+      stopRec.disabled = false;
+      downloadContainer.innerHTML = "";
+      statusEl.textContent = "Starting streams...";
+      await startStreams();
+
+      statusEl.textContent = "Combining streams...";
+      const combinedStream = createCombinedStream();
+
+      let mimeType = getSupportedMimeType();
+      if (!mimeType) {
+        statusEl.textContent = "No supported MIME type for recording found.";
+        startRec.disabled = false;
+        stopRec.disabled = true;
+        return;
+      }
+      statusEl.textContent = `Recording with MIME type: ${mimeType}`;
+
       recordedChunks = [];
-      recorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp8' });
+      try {
+        recorder = new MediaRecorder(combinedStream, { mimeType });
+      } catch (e) {
+        console.error("Failed to create MediaRecorder:", e);
+        statusEl.textContent = "Failed to start recorder: " + e.message;
+        startRec.disabled = false;
+        stopRec.disabled = true;
+        return;
+      }
 
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          recordedChunks.push(e.data);
-        }
+        if (e.data.size > 0) recordedChunks.push(e.data);
       };
-
       recorder.onstop = () => {
-        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        const blob = new Blob(recordedChunks, { type: mimeType });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
+        const a = document.createElement('a');
         a.href = url;
-        a.download = `recording_${Date.now()}.webm`;
-        a.textContent = "Download recording";
+        a.download = `screen_camera_recording.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`;
+        a.textContent = "Download Recording";
         a.className = "download-link";
-        downloadContainer.innerHTML = "";
         downloadContainer.appendChild(a);
-        statusEl.textContent = "Recording stopped.";
-        recorder = null;
+        statusEl.textContent = "Recording stopped. Ready to start a new recording.";
       };
 
       recorder.start();
-      statusEl.textContent = "Recording started.";
-      startRecBtn.disabled = true;
-      stopRecBtn.disabled = false;
+      statusEl.textContent = "Recording started. Press Stop Recording when done.";
+    };
 
-      // Start drawing loop for canvas
-      drawLoop();
-    }
-
-    // Draw loop compositing screen + camera overlay
-    function drawLoop() {
-      if (!recorder) return;
-      const screenTrack = screenStream.getVideoTracks()[0];
-      if (screenTrack.readyState === "ended") {
-        stopRecording();
-        return;
+    stopRec.onclick = () => {
+      if (recorder && recorder.state === "recording") {
+        recorder.stop();
       }
-      const width = canvas.width;
-      const height = canvas.height;
+      startRec.disabled = false;
+      stopRec.disabled = true;
 
-      // Draw screen video full canvas
-      ctx.clearRect(0, 0, width, height);
-      ctx.drawImage(screenVideo, 0, 0, width, height);
-
-      // Draw camera overlay in position & size
-      ctx.drawImage(cameraVideo, overlayPos.x * (width / previewContainer.clientWidth),
-                                overlayPos.y * (height / previewContainer.clientHeight),
-                                overlaySize.width * (width / previewContainer.clientWidth),
-                                overlaySize.height * (height / previewContainer.clientHeight));
-
-      requestAnimationFrame(drawLoop);
-    }
-
-    function stopRecording() {
-      if (!recorder) return;
-      recorder.stop();
-      startRecBtn.disabled = false;
-      stopRecBtn.disabled = true;
-
-      // Stop audio streams
-      if (micStream) {
-        micStream.getTracks().forEach(t => t.stop());
-        micStream = null;
-      }
+      // Stop streams
       if (screenStream) {
         screenStream.getTracks().forEach(t => t.stop());
         screenStream = null;
-        screenVideo.srcObject = null;
       }
       if (cameraStream) {
         cameraStream.getTracks().forEach(t => t.stop());
         cameraStream = null;
         cameraVideo.srcObject = null;
-        cameraOverlay.style.display = "none";
       }
+      if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+      }
+      resolutionInfo.textContent = "Preview stopped.";
+    };
 
-      statusEl.textContent = "Recording stopped.";
-    }
+    videoSelect.onchange = async () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(t => t.stop());
+        cameraStream = null;
+        cameraVideo.srcObject = null;
+      }
+      await startStreams();
+    };
+    audioSelect.onchange = async () => {
+      if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+      }
+      await startStreams();
+    };
 
-    // Event listeners
-    startPreviewBtn.addEventListener("click", startCameraPreview);
-    startScreenBtn.addEventListener("click", startScreenCapture);
-    startRecBtn.addEventListener("click", startRecording);
-    stopRecBtn.addEventListener("click", stopRecording);
-    refreshBtn.addEventListener("click", populateDevices);
-
-    // Initial setup
-    populateDevices();
+    // On page load, populate devices and start preview streams
+    (async () => {
+      await populateDevices();
+      await startStreams();
+      statusEl.textContent = "Ready to record.";
+    })();
 
   </script>
 </body>
